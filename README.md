@@ -1,12 +1,38 @@
-# Chitran (with Ditto)
+<p align="center">
+  <img src="daemon/assets/byte2/hero.png" alt="Ditto — Chitran Desktop Mascot" width="110"/>
+</p>
 
-**Chitran** (*from Chitragupta, the record-keeper*) is a local-first Windows 11 desktop assistant, workflow engine, and focus/habit tracker paired with **Ditto**, an animated cyan cyber-slime mascot that lives directly in your taskbar.
+<h1 align="center">Chitran <span style="font-weight:normal;">(with Ditto)</span></h1>
 
-Built in Python with **₹0/month operating cost** using local SQLite storage, local browser automation over Chrome CDP, free-tier LLM routing (Groq + Gemini) with strict daily quota caps, and a Flow Launcher (`cn`) + mouse-driven HUD interface.
+<p align="center">
+  Local-first Windows 11 desktop automation daemon, focus &amp; habit tracker, and HITL document engine — paired with <b>Ditto</b>, an animated taskbar cyber-slime.
+</p>
+
+<p align="center">
+  <img src="https://img.shields.io/badge/Python_3.12-060709?style=for-the-badge&logo=python&logoColor=22D3EE&labelColor=18181B" alt="Python 3.12"/>
+  <img src="https://img.shields.io/badge/FastAPI-060709?style=for-the-badge&logo=fastapi&logoColor=22D3EE&labelColor=18181B" alt="FastAPI"/>
+  <img src="https://img.shields.io/badge/SQLite-060709?style=for-the-badge&logo=sqlite&logoColor=38BDF8&labelColor=18181B" alt="SQLite"/>
+  <img src="https://img.shields.io/badge/Playwright_CDP-060709?style=for-the-badge&logo=googlechrome&logoColor=F59E0B&labelColor=18181B" alt="Chrome CDP"/>
+  <img src="https://img.shields.io/badge/Groq_+_Gemini-060709?style=for-the-badge&logo=googlegemini&logoColor=22D3EE&labelColor=18181B" alt="Groq + Gemini"/>
+  <img src="https://img.shields.io/badge/Windows_11-060709?style=for-the-badge&logo=windows11&logoColor=38BDF8&labelColor=18181B" alt="Windows 11"/>
+</p>
 
 ---
 
-## Architecture
+**Chitran** (*from Chitragupta, the record-keeper*) runs silently on `127.0.0.1:7777` at **₹0/month**, routing between fast Groq LLMs and Gemini free-tier models with strict daily quota caps while keeping all activity logs, goals, and form-fill profiles strictly local.
+
+## Meet Ditto (Live Taskbar States)
+
+Ditto sits directly inside your Windows 11 taskbar (`daemon/mascot.py` + `daemon/byte_art.py`) and shifts appearance in real time based on your system state:
+
+| Focused | Working | Alert | Paused | Hydration | Mail |
+| :---: | :---: | :---: | :---: | :---: | :---: |
+| <img src="daemon/assets/byte2/focused.png" width="56" alt="Focused"/> | <img src="daemon/assets/byte2/working.png" width="56" alt="Working"/> | <img src="daemon/assets/byte2/alert.png" width="56" alt="Alert"/> | <img src="daemon/assets/byte2/paused.png" width="56" alt="Paused"/> | <img src="daemon/assets/byte2/hydration.png" width="56" alt="Hydration"/> | <img src="daemon/assets/byte2/mail.png" width="56" alt="Mail"/> |
+| Monitoring active | Background job running | Overdue goal / distraction | Reminders paused | Water / eye break | Gmail briefing ready |
+
+---
+
+## System Architecture
 
 ```mermaid
 flowchart LR
@@ -25,25 +51,31 @@ flowchart LR
 
 ---
 
-## Key Capabilities
+## Command Reference (`Alt + Space` → `cn ...`)
 
-- **Two Ways to Control (`cn` + Ditto):**
-  - **Keyboard (`Alt + Space` → `cn <cmd>`):** Instant Flow Launcher plugin (`plugin/main.py` using Python stdlib only).
-  - **Mouse (Ditto Mascot):** Procedural vector slime (`daemon/byte_art.py` + `daemon/mascot.py`) pinned inside the Windows 11 taskbar with live states (`FOCUSED`, `WORKING`, `ALERT`, `PAUSED`, `HYDRATION`, `MAIL`).
-- **Human-in-the-Loop Office Generator (`cn doc` / `cn excel` / `cn ppt`):**
-  - Two-stage workflow: researches the topic, drafts a structured outline, and opens an editable **Outline Approval HUD** before compiling.
-  - Supports **Revise with AI**, optional organizer `.pptx` template branding preservation, local offline **Mermaid diagram** rendering via headless Chrome, and web image search.
-- **Local Focus & Habit Analytics (`cn stats`):**
-  - 15-second local active-window logger (`daemon/monitor.py`) with YouTube study/distraction classification and break nudges.
-  - Responsive dark-mode SVG dashboard (`http://127.0.0.1:7777/dashboard`) with Day/Week/Month focus charts, goal completion, hydration streaks, and API quota gauges.
-- **Chrome CDP Automation (`cn fill`, `cn mail`, `cn colab`):**
-  - Connects to a dedicated Chrome debug profile (`port 9222`) to auto-fill forms from a local vault (never clicks Submit), summarize today's Gmail into a dark HUD + voice briefing, and monitor Google Colab runs.
-- **Safe Downloads Organizer (`cn organize` / `cn undo`):**
-  - Preview-first file sorting into configured folders with an undo batch log (`data/undo_log.json`) and **zero file deletion**.
-- **Parallel Web Researcher (`cn research <topic>`):**
-  - Gathers sources into `~/Daily_Notes/context_packs/` and opens a 1-click Copy Prompt HUD.
-- **Voice Alerts (`cn say` / `cn mute`):**
-  - Neural TTS via `edge-tts` with automatic offline Windows SAPI5 (`pyttsx3`) fallback.
+| Command | Action |
+| :--- | :--- |
+| **`cn goal <task> @ <HH:MM>`** | Logs a daily goal + deadline in SQLite (or opens Deadline / Planner HUD). |
+| **`cn done <id or keyword>`** | Marks a pending goal completed. |
+| **`cn ask <question>`** | Queries Groq / Gemini mentor and opens a floating dark HUD. |
+| **`cn doc` / `excel` / `ppt <topic>`** | Stage 1 **Outline Approval HUD** (slide count, **Revise with AI**, `.pptx` template branding, local Mermaid PNGs, web image search) → compiles to `~/Documents/Sidekick_Outputs/`. |
+| **`cn research <topic>`** | Parallel technical web search → Markdown Context Pack + 1-click Copy Prompt HUD. |
+| **`cn fill [role]`** | Auto-fills active Chrome form fields from local vault via CDP (never clicks Submit). |
+| **`cn mail`** | Summarizes today's Gmail via silent Chrome CDP into a dark HUD + voice briefing. |
+| **`cn colab [url]`** | Runs active Google Colab cells in the background with Win+L keepalive lock. |
+| **`cn organize` / `cn undo`** | Preview-first Downloads sorter into configured folders with batch undo (`data/undo_log.json`). |
+| **`cn stats`** | Opens the dark-mode **Analytics Dashboard** (`http://127.0.0.1:7777/dashboard`) with Day/Week/Month SVG charts, goals, hydration streaks & quota gauges. |
+| **`cn pause` / `cn mute` / `cn ditto`** | Toggles monitoring, headphone TTS (`edge-tts` + SAPI5 fallback), or restores Ditto on the taskbar. |
+| **`cn kill`** | Emergency brake: aborts background tasks and releases keepalive locks. |
+
+---
+
+## Built-In Engineering Guardrails
+
+- **₹0 Cost Guarantee:** Token/request quota tracker warns at **80%** and hard-stops LLM calls at **95%** of free-tier daily limits (`daemon/quota.py`).
+- **Browser `Origin` Guard:** FastAPI middleware blocks requests from external origins (`HTTP 403`), restricting browser access to `127.0.0.1` / `localhost`.
+- **Zero Silent Data Loss or Submissions:** `cn organize` never deletes files and logs every move to `data/undo_log.json`; `cn fill` never clicks Submit.
+- **Local-First Privacy:** Active-window telemetry, habit events, and notes stay on disk in `data/sidekick.db` and `~/Daily_Notes/` (excluded from Git via `.gitignore`).
 
 ---
 
@@ -59,21 +91,16 @@ flowchart LR
 │   ├── hud.py              # Floating dark-slate Tkinter HUDs & cheat sheet
 │   ├── office_gen.py       # HITL .docx / .xlsx / .pptx builder + Mermaid + image search
 │   ├── organizer.py        # Preview-first Downloads sorter + undo support
-│   ├── planner.py / planner_ui.py  # Daily goals & deadline tracker
+│   ├── planner.py / planner_ui.py
 │   ├── browser.py / form_filler.py / colab_runner.py / gmail_briefing.py
-│   ├── researcher.py       # Parallel web research & context packs
-│   ├── analytics.py        # Day/Week/Month SQLite aggregator
-│   ├── voice.py            # edge-tts + pyttsx3 fallback
-│   ├── db.py / state.py / win_ui.py
+│   ├── researcher.py / analytics.py / voice.py / db.py / state.py / win_ui.py
+│   ├── assets/byte2/       # Ditto sprite states
 │   └── templates/dashboard.html
 ├── plugin/
 │   ├── plugin.json         # Flow Launcher manifest (keyword: cn)
 │   └── main.py             # Stdlib-only Flow Launcher bridge
-├── config/
-│   └── organizer_rules.json
+├── config/organizer_rules.json
 ├── scripts/
-│   ├── launch_chrome_cdp.bat
-│   └── start_sidekick.bat
 ├── USER_GUIDE.md
 ├── requirements.txt
 └── .env.example
@@ -89,14 +116,12 @@ flowchart LR
    cd Chitran
    pip install -r requirements.txt
    ```
-2. **Configure environment variables:**
+2. **Configure `.env`:**
    Copy `.env.example` to `.env` and add your own free-tier `GROQ_API_KEY` and `GEMINI_API_KEY`.
-   *(Your `.env`, `config/profile_vault.json`, and `data/` SQLite/log files are excluded by `.gitignore`.)*
 3. **Link Flow Launcher Plugin (optional):**
-   Create a directory junction from `%APPDATA%\FlowLauncher\Plugins\Chitran` to `.\plugin`, then restart Flow Launcher. Use **`Alt + Space`** → **`cn`**.
-4. **Launch Daemon / Ditto:**
-   Run `python daemon/mascot.py` (or trigger any `cn` command in Flow Launcher).
-   See [`USER_GUIDE.md`](USER_GUIDE.md) for the full command cheat sheet.
+   Create a directory junction from `%APPDATA%\FlowLauncher\Plugins\Chitran` to `.\plugin` and restart Flow Launcher. Summon via **`Alt + Space`** → **`cn`**.
+4. **Launch Ditto & Daemon:**
+   Run `python daemon/mascot.py` (or trigger any `cn` command in Flow Launcher). See [`USER_GUIDE.md`](USER_GUIDE.md) for details.
 
 ---
 
