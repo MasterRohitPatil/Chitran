@@ -22,7 +22,7 @@ SYSTEM_PROMPT = (
 
 
 GROQ_MODELS = ("openai/gpt-oss-120b", "qwen/qwen3.8-27b")
-GEMINI_MODELS = ("gemini-3.5-flash", "gemini-3.6-flash", "gemini-3.7-flash")
+GEMINI_MODELS = ("gemini-3.5-flash", "gemini-3.5-flash-lite", "gemini-3.6-flash")
 GEMINI_MODEL = GEMINI_MODELS[0]
 
 

@@ -1,3 +1,4 @@
+import os
 from datetime import datetime
 from pathlib import Path
 from typing import Dict, Any, Optional
@@ -16,6 +17,15 @@ DAILY_FREE_LIMITS = {
     },
 }
 
+def get_provider_limits(provider: str) -> Dict[str, int]:
+    """Return configured daily request and token limits, scaling for Gemini Pro if configured."""
+    provider = provider.lower().strip()
+    if provider == "gemini":
+        tier = os.environ.get("GEMINI_TIER", "").strip().lower()
+        if tier in ("pro", "paid", "advanced"):
+            return {"max_requests": 2500, "max_tokens": 3000000}
+    return DAILY_FREE_LIMITS.get(provider, {"max_requests": 250, "max_tokens": 100000})
+
 WARN_THRESHOLD_PCT = 80.0
 BLOCK_THRESHOLD_PCT = 95.0
 
@@ -30,7 +40,7 @@ def check_quota(provider: str, db_path: Optional[Path] = None) -> Dict[str, Any]
     Returns allowed=False if usage >= 95%, warning=True if usage >= 80%.
     """
     provider = provider.lower().strip()
-    limits = DAILY_FREE_LIMITS.get(provider, {"max_requests": 250, "max_tokens": 100000})
+    limits = get_provider_limits(provider)
     init_db(db_path)
 
     today = _today_str()

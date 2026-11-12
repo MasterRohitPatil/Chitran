@@ -149,7 +149,7 @@ def summarize_outline_counts(doc_type: str, outline: Dict[str, Any], source_coun
 
 
 def inspect_pptx_template(template_path: Optional[Path]) -> Dict[str, Any]:
-    """Read slide dimensions and existing slide rubric hints from a hackathon/college .pptx template."""
+    """Read slide dimensions, rubric hints, speaker notes, and embedded organizer directives from a .pptx template."""
     if not template_path:
         return {}
     t_path = Path(template_path)
@@ -164,16 +164,37 @@ def inspect_pptx_template(template_path: Optional[Path]) -> Dict[str, Any]:
         sh_in = round(prs.slide_height / 914400, 3)
 
         rubric_slides: List[str] = []
+        organizer_instructions: List[str] = []
+        speaker_notes: List[str] = []
         dark_bg = False
+
+        instruction_keywords = (
+            "instruction", "guideline", "ensure", "limit", "pointer",
+            "maximum", "rubric", "criteria", "note -", "do not", "mandatory"
+        )
+
         for idx, slide in enumerate(prs.slides, 1):
             texts: List[str] = []
             for shape in slide.shapes:
                 if getattr(shape, "has_text_frame", False):
-                    txt = re.sub(r"\s+", " ", shape.text_frame.text or "").strip()
-                    if txt and "click to add" not in txt.lower():
-                        texts.append(txt[:140])
+                    raw = (shape.text_frame.text or "").strip()
+                    if raw and "click to add" not in raw.lower():
+                        cleaned = re.sub(r"\s+", " ", raw)
+                        texts.append(cleaned[:180])
+                        lower_raw = raw.lower()
+                        if any(kw in lower_raw for kw in instruction_keywords):
+                            organizer_instructions.append(f"Slide {idx} Directive: {cleaned}")
+
             if texts:
-                rubric_slides.append(f"Slide {idx}: {' — '.join(texts[:2])}")
+                rubric_slides.append(f"Slide {idx}: {' — '.join(texts[:3])}")
+
+            try:
+                if slide.has_notes_slide and slide.notes_slide.notes_text_frame:
+                    n_txt = slide.notes_slide.notes_text_frame.text.strip()
+                    if n_txt:
+                        speaker_notes.append(f"Slide {idx} Notes: {re.sub(r'\s+', ' ', n_txt)[:200]}")
+            except Exception:
+                pass
 
         # Detect dark solid background if explicitly set on master or slide 1
         try:
@@ -192,6 +213,8 @@ def inspect_pptx_template(template_path: Optional[Path]) -> Dict[str, Any]:
             "slide_height_in": sh_in,
             "template_slide_count": len(prs.slides),
             "rubric_hints": rubric_slides[:15],
+            "organizer_instructions": organizer_instructions[:10],
+            "speaker_notes": speaker_notes[:10],
             "dark_background": dark_bg,
         }
     except Exception:
@@ -234,11 +257,18 @@ def _build_outline_prompt(
     extra_blocks: List[str] = []
     if instructions.strip():
         extra_blocks.append(f"User Instructions (MUST FOLLOW):\n{instructions.strip()}")
-    if template_info and template_info.get("rubric_hints"):
-        rubric_str = "\n".join(f"  - {h}" for h in template_info["rubric_hints"])
-        extra_blocks.append(
-            f"Organizer .pptx Template Guidelines (preserve structure/headings):\n{rubric_str}"
-        )
+    if template_info:
+        if template_info.get("organizer_instructions"):
+            org_rules = "\n".join(f"  * {r}" for r in template_info["organizer_instructions"])
+            extra_blocks.append(f"Organizer Template Directives & Competition Rules (STRICT):\n{org_rules}")
+        if template_info.get("speaker_notes"):
+            notes_str = "\n".join(f"  * {n}" for n in template_info["speaker_notes"])
+            extra_blocks.append(f"Organizer Speaker Notes / Evaluation Criteria:\n{notes_str}")
+        if template_info.get("rubric_hints"):
+            rubric_str = "\n".join(f"  - {h}" for h in template_info["rubric_hints"])
+            extra_blocks.append(
+                f"Organizer .pptx Template Guidelines (preserve structure/headings):\n{rubric_str}"
+            )
     extra_section = ("\n\n" + "\n\n".join(extra_blocks)) if extra_blocks else ""
 
     if doc_type == "doc":
@@ -2668,6 +2698,45 @@ def _compile_pptx(
     return out_path
 
 
+def _export_pptx_pdf_and_previews(pptx_path: Path) -> Tuple[Optional[Path], List[Path]]:
+    """Automatically export portal-ready PDF and high-res slide preview PNGs via native PowerPoint COM."""
+    try:
+        import win32com.client
+    except ImportError:
+        return None, []
+
+    pdf_out = pptx_path.with_suffix(".pdf")
+    previews_dir = pptx_path.parent / f"{pptx_path.stem}_previews"
+    previews_dir.mkdir(parents=True, exist_ok=True)
+    preview_files: List[Path] = []
+
+    try:
+        ppt_app = win32com.client.Dispatch("PowerPoint.Application")
+    except Exception as e:
+        logger.debug(f"PowerPoint COM Dispatch failed: {e}")
+        return None, []
+
+    try:
+        pres = ppt_app.Presentations.Open(str(pptx_path.resolve()), WithWindow=False)
+        # Format 32 = ppSaveAsPDF
+        pres.SaveAs(str(pdf_out.resolve()), 32)
+        for i in range(1, pres.Slides.Count + 1):
+            img_file = previews_dir / f"slide_{i}.png"
+            pres.Slides(i).Export(str(img_file.resolve()), "PNG", 1920, 1080)
+            if img_file.exists():
+                preview_files.append(img_file)
+        pres.Close()
+        return pdf_out, preview_files
+    except Exception as e:
+        logger.debug(f"PowerPoint COM export error: {e}")
+        return None, []
+    finally:
+        try:
+            ppt_app.Quit()
+        except Exception:
+            pass
+
+
 async def compile_office_from_draft(
     draft_path: Path,
     edited_outline: Optional[Dict[str, Any]] = None,
@@ -2722,10 +2791,22 @@ async def compile_office_from_draft(
     else:
         compiled = _compile_xlsx(outline, sources, out_path)
 
+    pdf_file: Optional[Path] = None
+    preview_snapshots: List[Path] = []
+    if doc_type == "ppt":
+        try:
+            pdf_file, preview_snapshots = _export_pptx_pdf_and_previews(compiled)
+            if pdf_file and pdf_file.exists():
+                logger.info(f"Generated submission-ready PDF: {pdf_file.name}")
+        except Exception as e:
+            logger.debug(f"Optional PowerPoint PDF/Preview export skipped: {e}")
+
     return {
         "status": "success",
         "doc_type": doc_type,
         "file": str(compiled),
+        "pdf_file": str(pdf_file) if pdf_file else "",
+        "preview_count": len(preview_snapshots),
         "visual_count": len(visuals),
         "template_used": resolved_template.name if (resolved_template and resolved_template.exists()) else "",
         "message": f"Compiled {compiled.name} -> Chitran_Outputs/",
