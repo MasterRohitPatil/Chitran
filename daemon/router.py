@@ -22,7 +22,7 @@ SYSTEM_PROMPT = (
 
 
 GROQ_MODELS = ("openai/gpt-oss-120b", "qwen/qwen3.8-27b")
-GEMINI_MODELS = ("gemini-3.5-flash", "gemini-3.8-flash")
+GEMINI_MODELS = ("gemini-3.5-flash", "gemini-3.6-flash", "gemini-3.7-flash")
 GEMINI_MODEL = GEMINI_MODELS[0]
 
 
@@ -48,7 +48,7 @@ async def query_groq(
         "temperature": 0.4,
         "max_tokens": max_tokens
     }
-    async with httpx.AsyncClient(timeout=20.0) as client:
+    async with httpx.AsyncClient(timeout=25.0) as client:
         resp = await client.post(url, headers=headers, json=payload)
         resp.raise_for_status()
         data = resp.json()
@@ -58,7 +58,8 @@ async def query_groq(
             "completion": int(usage.get("completion_tokens", 0)),
             "total": int(usage.get("total_tokens", 0)),
         }
-        return data["choices"][0]["message"]["content"], tokens
+        content = data["choices"][0]["message"].get("content") or ""
+        return content, tokens
 
 
 async def query_gemini(
@@ -68,8 +69,8 @@ async def query_gemini(
     max_tokens: int = 1500,
     model_name: str = GEMINI_MODEL,
 ) -> Tuple[str, Dict[str, int]]:
-    """Calls Google Gemini API via x-goog-api-key header (never URL query param)."""
-    url = f"https://generativelanguage.googleapis.com/v1beta/models/{model_name}:generateContent"
+    """Calls Google Gemini API with fallback URL key passing and 35s timeout."""
+    url = f"https://generativelanguage.googleapis.com/v1beta/models/{model_name}:generateContent?key={api_key}"
     headers = {
         "x-goog-api-key": api_key,
         "Content-Type": "application/json",
@@ -86,7 +87,7 @@ async def query_gemini(
             "maxOutputTokens": max_tokens
         }
     }
-    async with httpx.AsyncClient(timeout=12.0) as client:
+    async with httpx.AsyncClient(timeout=35.0) as client:
         resp = await client.post(url, headers=headers, json=payload)
         resp.raise_for_status()
         data = resp.json()
@@ -96,7 +97,11 @@ async def query_gemini(
             "completion": int(meta.get("candidatesTokenCount", 0)),
             "total": int(meta.get("totalTokenCount", 0)),
         }
-        return data["candidates"][0]["content"]["parts"][0]["text"], tokens
+        cand = (data.get("candidates") or [{}])[0]
+        text = ((cand.get("content") or {}).get("parts") or [{}])[0].get("text", "")
+        if not text.strip():
+            raise ValueError(f"Gemini {model_name} returned empty text")
+        return text, tokens
 
 
 async def query_mentor(
@@ -143,6 +148,9 @@ async def query_mentor(
                         max_tokens=max_tokens,
                         model_name=model_name,
                     )
+                    if not answer or not answer.strip():
+                        raise ValueError(f"Groq {model_name} returned empty content (reasoning exhausted token limit)")
+
                     post_status = record_usage(
                         "groq",
                         model_name,
