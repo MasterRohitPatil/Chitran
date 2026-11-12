@@ -1,0 +1,21 @@
+# Secrets & personal profile data
+.env
+.env.local
+config/profile_vault.json
+
+# Runtime state, databases & logs
+data/
+*.db
+*.db-wal
+*.db-shm
+*.log
+*.pid
+
+# Python artifacts & environments
+__pycache__/
+*.pyc
+*.pyo
+.venv/
+venv/
+.pytest_cache/
+

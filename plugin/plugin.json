@@ -1,0 +1,13 @@
+{
+  "ID": "E1B3E0C1-7290-4821-9B53-65934520B101",
+  "ActionKeyword": "cn",
+  "Name": "Chitran",
+  "Description": "Chitran & Ditto — Local Desktop & Browser Companion for Rohit Patil",
+  "Author": "Rohit Patil",
+  "Version": "2.0.0",
+  "Language": "python",
+  "Website": "https://github.com/MasterRohitPatil",
+  "ExecuteFileName": "main.py",
+  "IcoPath": "assets\\icon.png"
+}
+

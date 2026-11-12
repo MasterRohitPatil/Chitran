@@ -1,0 +1,100 @@
+{
+  "source_dir": "C:\\Users\\Rohit Patil\\Downloads",
+  "documents_root": "C:\\Users\\Rohit Patil\\Documents",
+  "ignore_extensions": [
+    ".tmp",
+    ".crdownload",
+    ".part",
+    ".partial",
+    ".download",
+    ".ini",
+    ".lnk",
+    ".exe",
+    ".msi",
+    ".bat"
+  ],
+  "rules": [
+    {
+      "name": "Power BI Desktop",
+      "folder": "Power BI Desktop",
+      "extensions": [".pbix", ".pbit"],
+      "keywords": ["power bi", "powerbi", "power_bi", "dax"]
+    },
+    {
+      "name": "Tableau - Exclr",
+      "folder": "Tableau - Exclr",
+      "extensions": [".twbx", ".twb"],
+      "keywords": ["tableau", "twbx"]
+    },
+    {
+      "name": "sql -exclr",
+      "folder": "sql -exclr",
+      "extensions": [".sql"],
+      "keywords": ["sql", "mysql", "postgres", "sqlite", "dbms", "stored_proc"]
+    },
+    {
+      "name": "Resumes",
+      "folder": "Resumes",
+      "extensions": [],
+      "allowed_extensions_for_keywords": [".pdf", ".docx", ".doc"],
+      "keywords": ["resume", "curriculum vitae", "biodata", "rohit_patil_cv", "cv_"]
+    },
+    {
+      "name": "Certificates",
+      "folder": "Certificates",
+      "extensions": [],
+      "keywords": [
+        "certificate",
+        "certification",
+        "cert_",
+        "badge",
+        "aws_academy",
+        "graduate",
+        "coursera",
+        "udemy",
+        "nptel",
+        "skillsbuild",
+        "edunet",
+        "completion",
+        "hackathon",
+        "marksheet",
+        "sem-iv_result",
+        "sem-iii-reg"
+      ]
+    },
+    {
+      "name": "Data-Analyst_assignment_Excelr",
+      "folder": "Data-Analyst_assignment_Excelr",
+      "extensions": [],
+      "keywords": ["assignment", "excelr", "exclr"]
+    },
+    {
+      "name": "Excel-exclr",
+      "folder": "Excel-exclr",
+      "extensions": [".xlsx", ".xlsm", ".xlsb", ".xls"],
+      "keywords": ["excel", "vlookup", "pivot"]
+    },
+    {
+      "name": "Data Science",
+      "folder": "Data Science",
+      "extensions": [".ipynb", ".parquet"],
+      "keywords": [
+        "data science",
+        "datascience",
+        "machine learning",
+        "deep learning",
+        "aiml",
+        "kaggle",
+        "dataset",
+        "adventureworks",
+        "pytorch",
+        "tensorflow",
+        "scikit",
+        "pandas",
+        "neural",
+        "nlp"
+      ]
+    }
+  ]
+}
+

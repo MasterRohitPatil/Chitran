@@ -1,0 +1,874 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Chitran — Local Analytics Dashboard</title>
+  <style>
+    :root {
+      --bg-root: #09090b;
+      --bg-card: #121217;
+      --bg-sub: #18181f;
+      --border: #27272a;
+      --text-main: #f4f4f5;
+      --text-muted: #a1a1aa;
+      --cyan: #22d3ee;
+      --cyan-dim: rgba(34, 211, 238, 0.14);
+      --emerald: #10b981;
+      --emerald-dim: rgba(16, 185, 129, 0.14);
+      --rose: #f43f5e;
+      --rose-dim: rgba(244, 63, 94, 0.14);
+      --amber: #f59e0b;
+      --amber-dim: rgba(245, 158, 11, 0.14);
+      --slate: #64748b;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      background: var(--bg-root);
+      color: var(--text-main);
+      font-family: "Segoe UI", -apple-system, BlinkMacSystemFont, Roboto, sans-serif;
+      line-height: 1.45;
+      min-height: 100vh;
+      padding: 22px 24px 36px;
+    }
+
+    .container {
+      max-width: 1320px;
+      margin: 0 auto;
+    }
+
+    /* Header */
+    .topbar {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      justify-content: space-between;
+      gap: 14px;
+      padding-bottom: 18px;
+      border-bottom: 1px solid var(--border);
+      margin-bottom: 20px;
+    }
+
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .brand-dot {
+      width: 11px;
+      height: 11px;
+      border-radius: 50%;
+      background: var(--cyan);
+      box-shadow: 0 0 12px var(--cyan);
+    }
+
+    .brand h1 {
+      font-size: 1.18rem;
+      font-weight: 700;
+      letter-spacing: 0.03em;
+    }
+
+    .brand-sub {
+      font-size: 0.8rem;
+      color: var(--text-muted);
+    }
+
+    .controls {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .range-pills {
+      display: inline-flex;
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 3px;
+      gap: 3px;
+    }
+
+    .range-btn {
+      background: transparent;
+      color: var(--text-muted);
+      border: none;
+      padding: 6px 14px;
+      border-radius: 7px;
+      font-size: 0.84rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.15s ease;
+    }
+
+    .range-btn:hover {
+      color: var(--text-main);
+    }
+
+    .range-btn.active {
+      background: var(--cyan);
+      color: #09090b;
+    }
+
+    .btn-ghost {
+      background: var(--bg-card);
+      color: var(--text-main);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 7px 12px;
+      font-size: 0.82rem;
+      font-weight: 600;
+      cursor: pointer;
+    }
+
+    .btn-ghost:hover {
+      border-color: var(--cyan);
+      color: var(--cyan);
+    }
+
+    .date-pill {
+      font-size: 0.78rem;
+      color: var(--text-muted);
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      padding: 6px 10px;
+      border-radius: 8px;
+    }
+
+    /* KPI Row */
+    .kpi-grid {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 14px;
+      margin-bottom: 16px;
+    }
+
+    .card {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 16px 18px;
+    }
+
+    .kpi-label {
+      font-size: 0.76rem;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      color: var(--text-muted);
+      font-weight: 600;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .kpi-val {
+      font-size: 1.75rem;
+      font-weight: 700;
+      margin-top: 6px;
+      letter-spacing: -0.02em;
+    }
+
+    .kpi-sub {
+      font-size: 0.8rem;
+      color: var(--text-muted);
+      margin-top: 4px;
+    }
+
+    .tag {
+      font-size: 0.72rem;
+      font-weight: 700;
+      padding: 2px 8px;
+      border-radius: 999px;
+      display: inline-block;
+    }
+
+    .tag-cyan { background: var(--cyan-dim); color: var(--cyan); }
+    .tag-emerald { background: var(--emerald-dim); color: var(--emerald); }
+    .tag-rose { background: var(--rose-dim); color: var(--rose); }
+    .tag-amber { background: var(--amber-dim); color: var(--amber); }
+    .tag-slate { background: rgba(100,116,139,0.18); color: #cbd5e1; }
+
+    /* Main Content Grid */
+    .main-grid {
+      display: grid;
+      grid-template-columns: 1.65fr 1fr;
+      gap: 16px;
+      margin-bottom: 16px;
+    }
+
+    .card-hdr {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 10px;
+      margin-bottom: 14px;
+    }
+
+    .card-title {
+      font-size: 0.95rem;
+      font-weight: 700;
+      color: var(--text-main);
+    }
+
+    .legend {
+      display: flex;
+      gap: 12px;
+      font-size: 0.76rem;
+      color: var(--text-muted);
+    }
+
+    .legend span {
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+    }
+
+    .swatch {
+      width: 9px;
+      height: 9px;
+      border-radius: 2px;
+      display: inline-block;
+    }
+
+    /* SVG Bar Chart */
+    .chart-wrap {
+      position: relative;
+      width: 100%;
+      height: 265px;
+    }
+
+    #focusChart {
+      width: 100%;
+      height: 100%;
+      display: block;
+    }
+
+    .tooltip {
+      position: fixed;
+      pointer-events: none;
+      background: #18181f;
+      border: 1px solid var(--cyan);
+      color: var(--text-main);
+      padding: 7px 10px;
+      border-radius: 8px;
+      font-size: 0.78rem;
+      box-shadow: 0 8px 24px rgba(0,0,0,0.45);
+      opacity: 0;
+      transition: opacity 0.1s ease;
+      z-index: 99;
+      white-space: nowrap;
+    }
+
+    /* App Usage Bars */
+    .app-list {
+      display: flex;
+      flex-direction: column;
+      gap: 11px;
+    }
+
+    .app-row-top {
+      display: flex;
+      justify-content: space-between;
+      font-size: 0.83rem;
+      margin-bottom: 4px;
+    }
+
+    .app-name {
+      font-weight: 600;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+      max-width: 68%;
+    }
+
+    .bar-track {
+      width: 100%;
+      height: 8px;
+      background: var(--bg-sub);
+      border-radius: 999px;
+      overflow: hidden;
+    }
+
+    .bar-fill {
+      height: 100%;
+      border-radius: 999px;
+      transition: width 0.3s ease;
+    }
+
+    /* Bottom Row */
+    .bottom-grid {
+      display: grid;
+      grid-template-columns: 1.25fr 1fr;
+      gap: 16px;
+    }
+
+    .goal-list {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      max-height: 290px;
+      overflow-y: auto;
+      padding-right: 4px;
+    }
+
+    .goal-item {
+      background: var(--bg-sub);
+      border: 1px solid var(--border);
+      border-radius: 9px;
+      padding: 10px 12px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .goal-title {
+      font-size: 0.86rem;
+      font-weight: 600;
+    }
+
+    .goal-meta {
+      font-size: 0.75rem;
+      color: var(--text-muted);
+      margin-top: 2px;
+    }
+
+    .btn-mini {
+      background: var(--emerald-dim);
+      color: var(--emerald);
+      border: 1px solid rgba(16, 185, 129, 0.35);
+      border-radius: 6px;
+      padding: 4px 9px;
+      font-size: 0.74rem;
+      font-weight: 700;
+      cursor: pointer;
+    }
+
+    .btn-mini:hover {
+      background: var(--emerald);
+      color: #09090b;
+    }
+
+    /* Quota Gauges & Habits */
+    .gauges-row {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+      margin-bottom: 14px;
+    }
+
+    .gauge-box {
+      background: var(--bg-sub);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 12px;
+      text-align: center;
+    }
+
+    .gauge-name {
+      font-size: 0.82rem;
+      font-weight: 700;
+      margin-bottom: 6px;
+    }
+
+    .gauge-meta {
+      font-size: 0.74rem;
+      color: var(--text-muted);
+      margin-top: 4px;
+    }
+
+    .habit-strip {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 10px;
+    }
+
+    .habit-mini {
+      background: var(--bg-sub);
+      border: 1px solid var(--border);
+      border-radius: 9px;
+      padding: 10px;
+      text-align: center;
+    }
+
+    .habit-mini .num {
+      font-size: 1.2rem;
+      font-weight: 700;
+    }
+
+    .habit-mini .lbl {
+      font-size: 0.72rem;
+      color: var(--text-muted);
+      margin-top: 2px;
+    }
+
+    .empty-msg {
+      color: var(--text-muted);
+      font-size: 0.84rem;
+      padding: 24px 0;
+      text-align: center;
+    }
+
+    @media (max-width: 1024px) {
+      .kpi-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+      .main-grid, .bottom-grid { grid-template-columns: 1fr; }
+    }
+
+    @media (max-width: 560px) {
+      body { padding: 14px; }
+      .kpi-grid { grid-template-columns: 1fr; }
+      .gauges-row, .habit-strip { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <header class="topbar">
+      <div class="brand">
+        <div class="brand-dot" id="healthDot"></div>
+        <div>
+          <h1>CHITRAN &mdash; ANALYTICS</h1>
+          <div class="brand-sub">100% Local SQLite Telemetry &bull; Zero Cloud Upload</div>
+        </div>
+      </div>
+
+      <div class="controls">
+        <span class="date-pill" id="dateWindow">Loading...</span>
+        <div class="range-pills" role="tablist" aria-label="Timeframe">
+          <button class="range-btn active" data-range="day">Day</button>
+          <button class="range-btn" data-range="week">Week</button>
+          <button class="range-btn" data-range="month">Month</button>
+        </div>
+        <button class="btn-ghost" id="refreshBtn">Refresh</button>
+      </div>
+    </header>
+
+    <!-- KPI Row -->
+    <section class="kpi-grid">
+      <div class="card">
+        <div class="kpi-label">Focus Ratio <span class="tag tag-cyan" id="focusTag">--%</span></div>
+        <div class="kpi-val" id="focusVal">0m</div>
+        <div class="kpi-sub" id="focusSub">0m distraction &bull; 0m neutral</div>
+      </div>
+
+      <div class="card">
+        <div class="kpi-label">Goals Completed <span class="tag tag-emerald" id="goalRateTag">0%</span></div>
+        <div class="kpi-val" id="goalVal">0 / 0</div>
+        <div class="kpi-sub" id="goalSub">In selected window</div>
+      </div>
+
+      <div class="card">
+        <div class="kpi-label">Hydration Streak <span class="tag tag-cyan" id="waterAckTag">0 acks</span></div>
+        <div class="kpi-val" id="streakVal">0 days</div>
+        <div class="kpi-sub" id="streakSub">0 water nudges &bull; 0 eye breaks</div>
+      </div>
+
+      <div class="card">
+        <div class="kpi-label">&#8377;0 API Quota Guard <span class="tag tag-emerald" id="quotaGuardTag">Safe</span></div>
+        <div class="kpi-val" id="quotaPeakVal">0%</div>
+        <div class="kpi-sub" id="quotaPeakSub">0 period requests &bull; 95% hard stop</div>
+      </div>
+    </section>
+
+    <!-- Focus Timeline + App Breakdown -->
+    <section class="main-grid">
+      <div class="card">
+        <div class="card-hdr">
+          <div class="card-title" id="chartTitle">Focus vs. Distraction Timeline</div>
+          <div class="legend">
+            <span><i class="swatch" style="background:var(--cyan)"></i>Focus</span>
+            <span><i class="swatch" style="background:var(--rose)"></i>Distraction</span>
+            <span><i class="swatch" style="background:var(--slate)"></i>Neutral</span>
+          </div>
+        </div>
+        <div class="chart-wrap">
+          <svg id="focusChart" preserveAspectRatio="none"></svg>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-hdr">
+          <div class="card-title">Top Applications</div>
+          <span class="tag tag-slate" id="appTotalTag">0 apps</span>
+        </div>
+        <div class="app-list" id="appList">
+          <div class="empty-msg">Waiting for activity logs...</div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Goals + Quota Gauges & Habits -->
+    <section class="bottom-grid">
+      <div class="card">
+        <div class="card-hdr">
+          <div class="card-title">Goals &amp; Deadlines</div>
+          <span class="tag tag-emerald" id="goalsCountPill">0 items</span>
+        </div>
+        <div class="goal-list" id="goalList">
+          <div class="empty-msg">No goals logged in this range. Use <code>cn goal</code> to lock one.</div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-hdr">
+          <div class="card-title">Free-Tier Quota Gauges &amp; Habits</div>
+          <span class="tag tag-amber">80% Warn / 95% Cap</span>
+        </div>
+        <div class="gauges-row" id="quotaGauges"></div>
+        <div class="habit-strip" id="habitStrip"></div>
+      </div>
+    </section>
+  </div>
+
+  <div class="tooltip" id="tooltip"></div>
+
+  <script>
+    let currentRange = "day";
+    let lastData = null;
+    let resizeTimer = null;
+    const tooltip = document.getElementById("tooltip");
+
+    function escapeHtml(str) {
+      return String(str || "")
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/"/g, "&quot;");
+    }
+
+    function fmtMinutes(m) {
+      const mins = Math.round(Number(m || 0));
+      if (mins < 60) return `${mins}m`;
+      const h = Math.floor(mins / 60);
+      const rem = mins % 60;
+      return rem ? `${h}h ${rem}m` : `${h}h`;
+    }
+
+    function colorForCat(cat) {
+      if (cat === "focus") return "var(--cyan)";
+      if (cat === "distraction") return "var(--rose)";
+      return "var(--slate)";
+    }
+
+    function tagClassForCat(cat) {
+      if (cat === "focus") return "tag-cyan";
+      if (cat === "distraction") return "tag-rose";
+      return "tag-slate";
+    }
+
+    function drawTimelineChart(timeline, rangeName) {
+      const svg = document.getElementById("focusChart");
+      const wrap = svg.parentElement;
+      const w = Math.max(480, wrap.clientWidth || 720);
+      const h = wrap.clientHeight || 265;
+      svg.setAttribute("viewBox", `0 0 ${w} ${h}`);
+      svg.innerHTML = "";
+
+      if (!timeline || timeline.length === 0) {
+        svg.innerHTML = `<text x="${w/2}" y="${h/2}" fill="#a1a1aa" font-size="13" text-anchor="middle">No activity recorded yet in this window.</text>`;
+        return;
+      }
+
+      const pad = { top: 14, right: 14, bottom: 32, left: 38 };
+      const plotW = w - pad.left - pad.right;
+      const plotH = h - pad.top - pad.bottom;
+
+      let maxTotal = 10;
+      for (const b of timeline) {
+        const tot = (b.focus_min || 0) + (b.distraction_min || 0) + (b.neutral_min || 0);
+        if (tot > maxTotal) maxTotal = tot;
+      }
+      maxTotal = Math.ceil(maxTotal / 10) * 10 || 10;
+
+      // Grid lines
+      for (let i = 0; i <= 4; i++) {
+        const val = Math.round((maxTotal * i) / 4);
+        const y = pad.top + plotH - (plotH * i) / 4;
+        const line = document.createElementNS("http://www.w3.org/2000/svg", "line");
+        line.setAttribute("x1", pad.left);
+        line.setAttribute("x2", w - pad.right);
+        line.setAttribute("y1", y);
+        line.setAttribute("y2", y);
+        line.setAttribute("stroke", "#27272a");
+        line.setAttribute("stroke-dasharray", i === 0 ? "" : "3,4");
+        svg.appendChild(line);
+
+        const lbl = document.createElementNS("http://www.w3.org/2000/svg", "text");
+        lbl.setAttribute("x", pad.left - 6);
+        lbl.setAttribute("y", y + 4);
+        lbl.setAttribute("fill", "#71717a");
+        lbl.setAttribute("font-size", "10");
+        lbl.setAttribute("text-anchor", "end");
+        lbl.textContent = `${val}m`;
+        svg.appendChild(lbl);
+      }
+
+      const n = timeline.length;
+      const step = plotW / n;
+      const barW = Math.max(5, Math.min(28, step * 0.62));
+      const labelEvery = n > 16 ? Math.ceil(n / 10) : 1;
+
+      timeline.forEach((b, i) => {
+        const cx = pad.left + i * step + step / 2;
+        const x = cx - barW / 2;
+
+        const fH = ((b.focus_min || 0) / maxTotal) * plotH;
+        const dH = ((b.distraction_min || 0) / maxTotal) * plotH;
+        const nH = ((b.neutral_min || 0) / maxTotal) * plotH;
+
+        let curY = pad.top + plotH;
+        const stacks = [
+          { h: fH, fill: "#22d3ee" },
+          { h: dH, fill: "#f43f5e" },
+          { h: nH, fill: "#64748b" },
+        ];
+
+        stacks.forEach((seg) => {
+          if (seg.h <= 0.5) return;
+          curY -= seg.h;
+          const rect = document.createElementNS("http://www.w3.org/2000/svg", "rect");
+          rect.setAttribute("x", x);
+          rect.setAttribute("y", curY);
+          rect.setAttribute("width", barW);
+          rect.setAttribute("height", seg.h);
+          rect.setAttribute("rx", 2);
+          rect.setAttribute("fill", seg.fill);
+          svg.appendChild(rect);
+        });
+
+        // Hover hit zone
+        const hit = document.createElementNS("http://www.w3.org/2000/svg", "rect");
+        hit.setAttribute("x", pad.left + i * step);
+        hit.setAttribute("y", pad.top);
+        hit.setAttribute("width", step);
+        hit.setAttribute("height", plotH);
+        hit.setAttribute("fill", "transparent");
+        hit.style.cursor = "crosshair";
+        hit.addEventListener("mousemove", (ev) => {
+          tooltip.innerHTML =
+            `<strong>${escapeHtml(b.label)}</strong><br/>` +
+            `Focus: ${b.focus_min}m &bull; Distraction: ${b.distraction_min}m &bull; Neutral: ${b.neutral_min}m`;
+          tooltip.style.left = `${ev.clientX + 12}px`;
+          tooltip.style.top = `${ev.clientY - 36}px`;
+          tooltip.style.opacity = "1";
+        });
+        hit.addEventListener("mouseleave", () => {
+          tooltip.style.opacity = "0";
+        });
+        svg.appendChild(hit);
+
+        if (i % labelEvery === 0 || i === n - 1) {
+          const xl = document.createElementNS("http://www.w3.org/2000/svg", "text");
+          xl.setAttribute("x", cx);
+          xl.setAttribute("y", h - 10);
+          xl.setAttribute("fill", "#a1a1aa");
+          xl.setAttribute("font-size", "10");
+          xl.setAttribute("text-anchor", "middle");
+          xl.textContent = rangeName === "day" ? b.label.slice(0, 2) + "h" : b.label;
+          svg.appendChild(xl);
+        }
+      });
+    }
+
+    function renderGaugeSvg(pct, color) {
+      const clamped = Math.max(0, Math.min(100, Number(pct || 0)));
+      const r = 34;
+      const c = 2 * Math.PI * r;
+      const offset = c * (1 - clamped / 100);
+      return `
+        <svg width="88" height="88" viewBox="0 0 88 88">
+          <circle cx="44" cy="44" r="${r}" fill="none" stroke="#27272a" stroke-width="8" />
+          <circle cx="44" cy="44" r="${r}" fill="none" stroke="${color}" stroke-width="8"
+            stroke-linecap="round" stroke-dasharray="${c.toFixed(1)}" stroke-dashoffset="${offset.toFixed(1)}"
+            transform="rotate(-90 44 44)" />
+          <text x="44" y="48" fill="#f4f4f5" font-size="14" font-weight="700" text-anchor="middle">${clamped.toFixed(1)}%</text>
+        </svg>`;
+    }
+
+    async function markGoalDone(goalId) {
+      try {
+        await fetch("/command", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ cmd: "done", arg: String(goalId) }),
+        });
+        loadAnalytics(currentRange);
+      } catch (err) {
+        console.error(err);
+      }
+    }
+
+    function renderDashboard(data) {
+      lastData = data;
+      const s = data.summary || {};
+      document.getElementById("dateWindow").textContent =
+        data.start_date === data.end_date ? data.end_date : `${data.start_date} -> ${data.end_date}`;
+
+      // KPI 1: Focus
+      document.getElementById("focusVal").textContent = fmtMinutes(s.focus_minutes);
+      document.getElementById("focusTag").textContent = `${s.focus_score_pct ?? 0}% focus`;
+      document.getElementById("focusSub").textContent =
+        `${fmtMinutes(s.distraction_minutes)} distraction • ${fmtMinutes(s.neutral_minutes)} neutral`;
+
+      // KPI 2: Goals
+      document.getElementById("goalVal").textContent = `${s.goals_completed ?? 0} / ${s.goals_total ?? 0}`;
+      document.getElementById("goalRateTag").textContent = `${s.completion_rate_pct ?? 0}%`;
+      document.getElementById("goalSub").textContent =
+        s.goals_total ? `${s.goals_total - s.goals_completed} pending in range` : "No goals logged yet";
+
+      // KPI 3: Hydration
+      document.getElementById("streakVal").textContent = `${s.hydration_streak_days ?? 0} day(s)`;
+      document.getElementById("waterAckTag").textContent = `${s.hydration_acks ?? 0} acks`;
+      document.getElementById("streakSub").textContent =
+        `${s.hydration_triggers ?? 0} water nudges • ${s.eye_breaks_triggers ?? 0} eye breaks`;
+
+      // Quota computation
+      const dailyQuota = (data.quota && data.quota.daily) || {};
+      const periodQuota = (data.quota && data.quota.period) || {};
+      const providers = Object.values(dailyQuota);
+      const peakPct = providers.length ? Math.max(...providers.map((p) => Number(p.usage_pct || 0))) : 0;
+      const periodReqs = Object.values(periodQuota).reduce((acc, q) => acc + (q.requests || 0), 0);
+
+      document.getElementById("quotaPeakVal").textContent = `${peakPct.toFixed(1)}%`;
+      document.getElementById("quotaPeakSub").textContent = `${periodReqs} period requests • 95% hard stop`;
+      const qTag = document.getElementById("quotaGuardTag");
+      if (peakPct >= 95) {
+        qTag.textContent = "Blocked";
+        qTag.className = "tag tag-rose";
+      } else if (peakPct >= 80) {
+        qTag.textContent = "Warning";
+        qTag.className = "tag tag-amber";
+      } else {
+        qTag.textContent = "Safe";
+        qTag.className = "tag tag-emerald";
+      }
+
+      // Timeline Chart
+      const titles = {
+        day: "Hourly Focus vs. Distraction (Today)",
+        week: "Daily Focus vs. Distraction (Last 7 Days)",
+        month: "Daily Focus vs. Distraction (Last 30 Days)",
+      };
+      document.getElementById("chartTitle").textContent = titles[data.range] || "Focus Timeline";
+      drawTimelineChart(data.timeline || [], data.range);
+
+      // App Breakdown
+      const apps = data.app_breakdown || [];
+      document.getElementById("appTotalTag").textContent = `${apps.length} top apps`;
+      const appList = document.getElementById("appList");
+      if (!apps.length) {
+        appList.innerHTML = `<div class="empty-msg">No foreground app logs recorded yet.</div>`;
+      } else {
+        appList.innerHTML = apps.map((a) => `
+          <div>
+            <div class="app-row-top">
+              <span class="app-name">${escapeHtml(a.app_name)}</span>
+              <span><span class="tag ${tagClassForCat(a.category)}">${escapeHtml(a.category)}</span> ${fmtMinutes(a.minutes)} (${a.share_pct}%)</span>
+            </div>
+            <div class="bar-track">
+              <div class="bar-fill" style="width:${Math.min(100, a.share_pct)}%;background:${colorForCat(a.category)}"></div>
+            </div>
+          </div>
+        `).join("");
+      }
+
+      // Goals List
+      const goals = data.goals || [];
+      document.getElementById("goalsCountPill").textContent = `${goals.length} item(s)`;
+      const goalList = document.getElementById("goalList");
+      if (!goals.length) {
+        goalList.innerHTML = `<div class="empty-msg">No goals logged in this range. Run <code>cn goal &lt;task&gt; @ HH:MM</code>.</div>`;
+      } else {
+        goalList.innerHTML = goals.map((g) => {
+          const done = g.status === "completed";
+          return `
+            <div class="goal-item">
+              <div>
+                <div class="goal-title">${escapeHtml(g.title)}</div>
+                <div class="goal-meta">${escapeHtml(g.date)} &bull; Deadline ${escapeHtml(g.deadline_time || "--:--")}</div>
+              </div>
+              <div>
+                ${done
+                  ? `<span class="tag tag-emerald">Completed</span>`
+                  : `<button class="btn-mini" onclick="markGoalDone(${Number(g.id)})">Mark Done</button>`
+                }
+              </div>
+            </div>`;
+        }).join("");
+      }
+
+      // Quota Gauges
+      const gaugesEl = document.getElementById("quotaGauges");
+      const orderedProviders = ["groq", "gemini"].filter((p) => dailyQuota[p]);
+      gaugesEl.innerHTML = orderedProviders.map((prov) => {
+        const info = dailyQuota[prov];
+        const pct = Number(info.usage_pct || 0);
+        const col = pct >= 95 ? "#f43f5e" : (pct >= 80 ? "#f59e0b" : "#22d3ee");
+        return `
+          <div class="gauge-box">
+            <div class="gauge-name">${escapeHtml(prov.toUpperCase())} Free Tier</div>
+            ${renderGaugeSvg(pct, col)}
+            <div class="gauge-meta">${info.requests_used} / ${info.requests_limit} reqs</div>
+            <div class="gauge-meta">${Number(info.tokens_used).toLocaleString()} / ${Number(info.tokens_limit).toLocaleString()} tok</div>
+          </div>`;
+      }).join("");
+
+      // Habit Counters
+      document.getElementById("habitStrip").innerHTML = `
+        <div class="habit-mini">
+          <div class="num" style="color:var(--cyan)">${s.hydration_acks ?? 0}</div>
+          <div class="lbl">Water Acks</div>
+        </div>
+        <div class="habit-mini">
+          <div class="num" style="color:var(--emerald)">${s.eye_breaks_acks ?? 0}</div>
+          <div class="lbl">Eye Breaks</div>
+        </div>
+        <div class="habit-mini">
+          <div class="num" style="color:var(--rose)">${s.youtube_nudges ?? 0}</div>
+          <div class="lbl">Drift Nudges</div>
+        </div>`;
+    }
+
+    async function loadAnalytics(rangeKey = currentRange) {
+      currentRange = rangeKey;
+      document.querySelectorAll(".range-btn").forEach((btn) => {
+        btn.classList.toggle("active", btn.dataset.range === rangeKey);
+      });
+      try {
+        const resp = await fetch(`/api/analytics?range=${encodeURIComponent(rangeKey)}`);
+        if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
+        const data = await resp.json();
+        renderDashboard(data);
+        document.getElementById("healthDot").style.background = "var(--cyan)";
+      } catch (err) {
+        document.getElementById("healthDot").style.background = "var(--rose)";
+        console.error("Analytics load error:", err);
+      }
+    }
+
+    document.querySelectorAll(".range-btn").forEach((btn) => {
+      btn.addEventListener("click", () => loadAnalytics(btn.dataset.range));
+    });
+    document.getElementById("refreshBtn").addEventListener("click", () => loadAnalytics(currentRange));
+    window.addEventListener("resize", () => {
+      clearTimeout(resizeTimer);
+      resizeTimer = setTimeout(() => {
+        if (lastData) {
+          drawTimelineChart(lastData.timeline || [], lastData.range);
+        }
+      }, 120);
+    });
+
+    loadAnalytics("day");
+    setInterval(() => loadAnalytics(currentRange), 30000);
+  </script>
+</body>
+</html>
+

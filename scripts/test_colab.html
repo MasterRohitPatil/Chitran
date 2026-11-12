@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Mock_Colab_Training.ipynb - Colaboratory</title>
+  <style>
+    body { font-family: sans-serif; background: #1e1e1e; color: #e4e4e7; padding: 24px; }
+    button { background: #2563eb; color: #fff; border: none; padding: 10px 16px; border-radius: 4px; cursor: pointer; }
+    .cell { margin-top: 16px; padding: 14px; border: 1px solid #3f3f46; border-radius: 6px; background: #27272a; }
+    .status { margin-top: 8px; color: #60a5fa; font-weight: bold; }
+  </style>
+</head>
+<body>
+  <h2>Mock_Colab_Training.ipynb</h2>
+  <button id="run-all-btn" onclick="runAllCells()">Run all</button>
+  <div id="cell-1" class="cell" data-running="false">
+    <code># Training epoch simulation...</code>
+    <div id="cell-status" class="status">Idle</div>
+  </div>
+  <div id="completion-marker"></div>
+
+  <script>
+    function runAllCells() {
+      const cell = document.getElementById('cell-1');
+      const status = document.getElementById('cell-status');
+      const marker = document.getElementById('completion-marker');
+      cell.setAttribute('data-running', 'true');
+      status.textContent = 'Running epoch 1/1...';
+
+      setTimeout(() => {
+        cell.setAttribute('data-running', 'false');
+        status.textContent = 'Completed (100%)';
+        marker.setAttribute('data-colab-done', 'true');
+      }, 3000);
+    }
+  </script>
+</body>
+</html>
+
