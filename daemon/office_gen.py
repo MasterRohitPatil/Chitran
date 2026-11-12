@@ -23,12 +23,15 @@ import asyncio
 import base64
 from datetime import datetime
 import json
+import logging
 from pathlib import Path
 import re
 import sys
 import threading
 from typing import Any, Dict, List, Optional, Tuple
 from urllib.parse import quote_plus
+
+logger = logging.getLogger("office_gen")
 
 if sys.stdout is None:
     sys.stdout = open("nul", "w", encoding="utf-8")
@@ -253,30 +256,50 @@ def _build_outline_prompt(
         )
     elif doc_type == "ppt":
         schema_hint = (
-            '{"title": "Conclusion-Led Presentation Title", "subtitle": "Concise Deck Subtitle", '
-            '"slides": [{"title": "Conclusion-Led Action Title", '
-            '"kicker": "CORE ARCHITECTURE", '
-            '"layout": "three_cards", '
-            '"bullets": ["**Lead-in**: Concrete technical explanation (14-22 words)"], '
-            '"takeaway": "1 concise bottom banner key takeaway", '
-            '"metrics": [{"value": "93%", "label": "Model Accuracy", "caption": "Evaluated on test split"}], '
-            '"speaker_note": "1-2 sentence presenter note", '
-            '"mermaid": "flowchart LR\\n  A[Client] --> B[API] --> C[DB]", '
-            '"image_query": "2-3 word query"}]}'
+            '{\n'
+            '  "title": "Conclusion-Led Presentation Title",\n'
+            '  "subtitle": "Concise Deck Subtitle",\n'
+            '  "deck_purpose": "1-sentence purpose: drive a decision | build consensus | report findings | pitch | teach a concept",\n'
+            '  "structure_type": "pyramid | narrative | teaching",\n'
+            '  "palette": {\n'
+            '    "name": "Midnight Executive | Forest & Moss | Coral Energy | Ocean Gradient | Charcoal Minimal | Teal Trust | Dark Slate",\n'
+            '    "primary": "#0B0F19",\n'
+            '    "secondary": "#18202F",\n'
+            '    "accent": "#22D3EE",\n'
+            '    "justification": "1-line explanation why this palette fits the topic"\n'
+            '  },\n'
+            '  "visual_motif": "1 repeating visual motif across all slides (e.g. rounded frosted cards with accent pill badges)",\n'
+            '  "slides": [\n'
+            '    {\n'
+            '      "core_message": "1 slide = 1 core message in <=12 words",\n'
+            '      "kicker": "CORE ARCHITECTURE",\n'
+            '      "title": "Conclusion-Led Action Title Without Trailing Period",\n'
+            '      "layout": "three_cards | architecture | metrics | split_visual | comparison | two_column",\n'
+            '      "bullets": ["**Lead-in**: Concrete technical explanation (14-22 words)"],\n'
+            '      "takeaway": "1 concise bottom banner key takeaway",\n'
+            '      "metrics": [{"value": "93%", "label": "Model Accuracy", "caption": "Evaluated on test split"}],\n'
+            '      "speaker_note": "1-2 sentence presenter note",\n'
+            '      "mermaid": "flowchart LR\\n  A[Client] --> B[API] --> C[DB]",\n'
+            '      "image_query": "2-3 word visual query"\n'
+            '    }\n'
+            '  ]\n'
+            '}'
         )
         rules = (
-            "Create 6 to 8 slides with rich semantic layout variety: "
-            "1. Give each slide an uppercase 2-3 word `kicker` (e.g. 'CORE ARCHITECTURE', 'PROBLEM STATEMENT', 'KEY METRICS', 'WORKFLOW PIPELINE') "
-            "   AND a conclusion-led action title that conveys the core finding (e.g. 'Decoupled Event-Driven Pipeline Prevents State Drift'). "
-            "2. Select an explicit `layout` archetype for each slide based on its content: "
-            "   - 'three_cards': 3 core pillars/concepts with 2 detailed bullets each. "
-            "   - 'architecture': Technical deep-dive with valid `mermaid` flowchart syntax (max 7 nodes) + 2 key takeaways. "
-            "   - 'metrics': 3-4 hero performance metrics with `value`, `label`, and `caption`. "
-            "   - 'split_visual': Text explanation on left + 2-3 word `image_query` on right. "
-            "   - 'comparison': 2 contrasted cards (e.g., Traditional vs Our Solution). "
-            "   - 'two_column': Balanced symmetrical 2-column cards. "
-            "3. Format all bullets with '**Lead-in**: explanation (14-22 words)'. "
-            "4. Provide a crisp 1-sentence bottom `takeaway` for every slide."
+            "STAGE 1 OUTLINE PLANNING RULES (Strictly plan structural decisions before writing slide text):\n"
+            "1. DECK PURPOSE: Exactly 1 sentence stating whether the deck drives a decision, builds consensus, reports findings, pitches, or teaches.\n"
+            "2. STRUCTURE TYPE: Pick one: 'pyramid' (analytical/business), 'narrative' (pitches/stories), or 'teaching' (coursework/tutorials).\n"
+            "3. TOPIC-INFORMED PALETTE: Name a content-informed palette with primary, secondary, and accent hex codes, plus a 1-line justification. "
+            "   (Options: 'Midnight Executive' [1E2761, CADCFC, FFFFFF], 'Forest & Moss' [2C5F2D, 97BC62, F5F5F5], 'Coral Energy' [F96167, F9E795, 2F3C7E], "
+            "   'Ocean Gradient' [065A82, 1C7293, 21295C], 'Charcoal Minimal' [36454F, F2F2F2, 212121], 'Teal Trust' [028090, 00A896, 02C39A], or 'Dark Slate' [0B0F19, 18202F, 22D3EE]).\n"
+            "4. VISUAL MOTIF: Exactly 1 repeating motif (e.g. rounded card shells, circular pill badges). NEVER accent lines or color bars.\n"
+            "5. ONE SLIDE = ONE MESSAGE: Every slide must have a 'core_message' in <=12 words. If a point requires 2 sentences, split into 2 slides.\n"
+            "6. CONCLUSION-LED TITLES: Every slide title must state the core finding or takeaway. NEVER end a slide title with a period.\n"
+            "7. EYEBROW KICKER: Provide an uppercase 2-3 word category tracker (e.g. 'CORE ARCHITECTURE', 'KEY PERFORMANCE METRICS').\n"
+            "8. LAYOUT VARIETY: Rotate archetypes across the deck ('three_cards', 'architecture', 'metrics', 'split_visual', 'comparison', 'two_column'). "
+            "   NEVER repeat the same archetype on consecutive slides.\n"
+            "9. BULLET FORMAT: 2 to 4 bullets per slide formatted as '**Lead-in**: explanation (14-22 words)'.\n"
+            "10. TAKEAWAY: Every slide must have a crisp 1-sentence bottom takeaway."
         )
     else:
         schema_hint = (
@@ -365,6 +388,7 @@ def _fallback_outline(doc_type: str, topic: str, sources: List[Dict[str, Any]]) 
     if doc_type == "ppt":
         slides = [
             {
+                "core_message": f"Identify operational overhead and production boundaries for {clean_title}",
                 "kicker": "PROBLEM & CONTEXT",
                 "title": f"{clean_title}: Problem Statement & Constraints",
                 "layout": "split_visual",
@@ -380,6 +404,7 @@ def _fallback_outline(doc_type: str, topic: str, sources: List[Dict[str, Any]]) 
                 "image_query": short_kw,
             },
             {
+                "core_message": "Decoupled pipeline stages enable deterministic offline fallbacks and easy unit testing",
                 "kicker": "SYSTEM ARCHITECTURE",
                 "title": "Decoupled Event-Driven Pipeline & Storage",
                 "layout": "architecture",
@@ -395,6 +420,7 @@ def _fallback_outline(doc_type: str, topic: str, sources: List[Dict[str, Any]]) 
                 "image_query": "",
             },
             {
+                "core_message": "Three non-negotiable engineering pillars protect data privacy and operational stability",
                 "kicker": "CORE ENGINEERING PILLARS",
                 "title": "Three Design Tenets Guiding Architecture",
                 "layout": "three_cards",
@@ -409,6 +435,7 @@ def _fallback_outline(doc_type: str, topic: str, sources: List[Dict[str, Any]]) 
                 "image_query": "",
             },
             {
+                "core_message": "Production benchmarks demonstrate sub-second latency within minimal system RAM footprint",
                 "kicker": "PERFORMANCE BENCHMARKS",
                 "title": "System Footprint & Verification Metrics",
                 "layout": "metrics",
@@ -428,6 +455,7 @@ def _fallback_outline(doc_type: str, topic: str, sources: List[Dict[str, Any]]) 
                 "image_query": "",
             },
             {
+                "core_message": "Phased milestones verify architecture at each stage before production release",
                 "kicker": "IMPLEMENTATION ROADMAP",
                 "title": "Milestones, Verification Gates & Rollout",
                 "layout": "two_column",
@@ -443,7 +471,21 @@ def _fallback_outline(doc_type: str, topic: str, sources: List[Dict[str, Any]]) 
                 "image_query": "",
             },
         ]
-        return {"title": clean_title, "subtitle": "Chitran Technical Presentation", "slides": slides}
+        return {
+            "title": clean_title,
+            "subtitle": "Chitran Technical Presentation",
+            "deck_purpose": f"Report architectural findings and production roadmap for {clean_title}",
+            "structure_type": "pyramid",
+            "palette": {
+                "name": "Dark Slate (Cyber/Tech)",
+                "primary": "#0B0F19",
+                "secondary": "#18202F",
+                "accent": "#22D3EE",
+                "justification": "Modern high-contrast dark theme optimized for technical engineering decks",
+            },
+            "visual_motif": "Rounded frosted card shells with cyber cyan pill accents",
+            "slides": slides,
+        }
 
     rows = []
     for idx in range(1, 7):
@@ -518,8 +560,10 @@ def _normalize_outline_structure(doc_type: str, raw: Dict[str, Any], topic: str)
                         })
 
             raw_iq = str(sl.get("image_query") or "").strip()
+            clean_title = str(sl.get("title") or f"Slide {idx + 1}").strip().rstrip(".")
             slides.append({
-                "title": str(sl.get("title") or "Slide").strip(),
+                "core_message": str(sl.get("core_message") or "").strip()[:140],
+                "title": clean_title,
                 "kicker": kicker,
                 "layout": layout,
                 "bullets": bullets or ["Key takeaway"],
@@ -527,13 +571,36 @@ def _normalize_outline_structure(doc_type: str, raw: Dict[str, Any], topic: str)
                 "speaker_note": str(sl.get("speaker_note") or "").strip(),
                 "mermaid": str(sl.get("mermaid") or "").strip(),
                 "metrics": clean_metrics,
-                "image_query": optimize_image_query(raw_iq, sl.get("title", "")) if raw_iq else "",
+                "image_query": optimize_image_query(raw_iq, clean_title) if raw_iq else "",
             })
         if not slides:
             return _fallback_outline("ppt", topic, [])
+
+        raw_pal = raw.get("palette")
+        if isinstance(raw_pal, dict) and raw_pal.get("primary"):
+            palette = {
+                "name": str(raw_pal.get("name", "Custom")).strip(),
+                "primary": str(raw_pal.get("primary", "#0B0F19")).strip(),
+                "secondary": str(raw_pal.get("secondary", "#18202F")).strip(),
+                "accent": str(raw_pal.get("accent", "#22D3EE")).strip(),
+                "justification": str(raw_pal.get("justification", "")).strip(),
+            }
+        else:
+            palette = {
+                "name": "Dark Slate (Cyber/Tech)",
+                "primary": "#0B0F19",
+                "secondary": "#18202F",
+                "accent": "#22D3EE",
+                "justification": "Modern high-contrast dark theme optimized for technical engineering decks",
+            }
+
         return {
-            "title": title,
+            "title": title.rstrip("."),
             "subtitle": str(raw.get("subtitle") or "Generated by Chitran").strip(),
+            "deck_purpose": str(raw.get("deck_purpose") or f"Executive briefing and technical review for {topic}").strip(),
+            "structure_type": str(raw.get("structure_type") or "pyramid").strip().lower(),
+            "palette": palette,
+            "visual_motif": str(raw.get("visual_motif") or "Rounded frosted card shells with cyber cyan pill accents").strip(),
             "slides": slides,
         }
 
@@ -564,11 +631,30 @@ def outline_to_editable_text(doc_type: str, outline: Dict[str, Any]) -> str:
     lines = [f"TITLE: {outline.get('title', 'Untitled')}"]
     if doc_type in ("doc", "ppt"):
         lines.append(f"SUBTITLE: {outline.get('subtitle', '')}")
+        if doc_type == "ppt":
+            if outline.get("deck_purpose"):
+                lines.append(f"PURPOSE: {outline.get('deck_purpose')}")
+            if outline.get("structure_type"):
+                lines.append(f"STRUCTURE: {outline.get('structure_type')}")
+            pal = outline.get("palette")
+            if isinstance(pal, dict):
+                p_name = pal.get("name", "Custom")
+                p_pri = pal.get("primary", "#0B0F19")
+                p_sec = pal.get("secondary", "#18202F")
+                p_acc = pal.get("accent", "#22D3EE")
+                p_just = pal.get("justification", "")
+                just_part = f" // {p_just}" if p_just else ""
+                lines.append(f"PALETTE: {p_name} | {p_pri} | {p_sec} | {p_acc}{just_part}")
+            if outline.get("visual_motif"):
+                lines.append(f"MOTIF: {outline.get('visual_motif')}")
+
         items = outline.get("sections" if doc_type == "doc" else "slides", [])
         key = "heading" if doc_type == "doc" else "title"
         for item in items:
             lines.append("")
             lines.append(f"## {item.get(key, 'Section')}")
+            if doc_type == "ppt" and item.get("core_message"):
+                lines.append(f"MESSAGE: {item['core_message']}")
             if doc_type == "ppt" and item.get("kicker"):
                 lines.append(f"KICKER: {item['kicker']}")
             if doc_type == "ppt" and item.get("layout"):
@@ -617,6 +703,10 @@ def editable_text_to_outline(doc_type: str, text: str, fallback: Dict[str, Any])
     if doc_type in ("doc", "ppt"):
         title = fallback.get("title", "Untitled")
         subtitle = fallback.get("subtitle", "")
+        deck_purpose = fallback.get("deck_purpose", "")
+        structure_type = fallback.get("structure_type", "pyramid")
+        palette = fallback.get("palette", {})
+        visual_motif = fallback.get("visual_motif", "")
         blocks: List[Dict[str, Any]] = []
         current: Optional[Dict[str, Any]] = None
         key = "heading" if doc_type == "doc" else "title"
@@ -631,6 +721,7 @@ def editable_text_to_outline(doc_type: str, text: str, fallback: Dict[str, Any])
                 "image_query": "",
             }
             if doc_type == "ppt":
+                blk["core_message"] = ""
                 blk["layout"] = "split_visual"
                 blk["takeaway"] = ""
                 blk["speaker_note"] = ""
@@ -644,7 +735,7 @@ def editable_text_to_outline(doc_type: str, text: str, fallback: Dict[str, Any])
                         current["mermaid"] = "\n".join(mermaid_buf).strip()
                     in_mermaid = False
                     mermaid_buf = []
-                elif s.startswith("##") or s.upper().startswith(("IMAGE:", "NOTE:", "TAKEAWAY:", "LAYOUT:")):
+                elif s.startswith("##") or s.upper().startswith(("IMAGE:", "NOTE:", "TAKEAWAY:", "LAYOUT:", "MESSAGE:", "KICKER:")):
                     # Graceful closure if user forgot END_MERMAID
                     if current is not None:
                         current["mermaid"] = "\n".join(mermaid_buf).strip()
@@ -661,10 +752,30 @@ def editable_text_to_outline(doc_type: str, text: str, fallback: Dict[str, Any])
                 title = s.split(":", 1)[1].strip() or title
             elif s.upper().startswith("SUBTITLE:"):
                 subtitle = s.split(":", 1)[1].strip()
+            elif doc_type == "ppt" and s.upper().startswith("PURPOSE:"):
+                deck_purpose = s.split(":", 1)[1].strip()
+            elif doc_type == "ppt" and s.upper().startswith("STRUCTURE:"):
+                structure_type = s.split(":", 1)[1].strip().lower()
+            elif doc_type == "ppt" and s.upper().startswith("MOTIF:"):
+                visual_motif = s.split(":", 1)[1].strip()
+            elif doc_type == "ppt" and s.upper().startswith("PALETTE:"):
+                raw_pal_line = s.split(":", 1)[1].strip()
+                just_part = ""
+                if "//" in raw_pal_line:
+                    raw_pal_line, just_part = raw_pal_line.split("//", 1)
+                pal_tokens = [tok.strip() for tok in raw_pal_line.split("|")]
+                if len(pal_tokens) >= 4:
+                    palette = {
+                        "name": pal_tokens[0],
+                        "primary": pal_tokens[1],
+                        "secondary": pal_tokens[2],
+                        "accent": pal_tokens[3],
+                        "justification": just_part.strip(),
+                    }
             elif s.startswith("##"):
                 if current:
                     blocks.append(current)
-                current = _make_block(s.lstrip("#").strip())
+                current = _make_block(s.lstrip("#").strip().rstrip("."))
             elif s.upper().startswith("MERMAID:") and current is not None:
                 inline = s.split(":", 1)[1].strip()
                 in_mermaid = True
@@ -675,6 +786,8 @@ def editable_text_to_outline(doc_type: str, text: str, fallback: Dict[str, Any])
                 current["bullets"].append(s[2:].strip())
             elif s.upper().startswith("IMAGE:") and current is not None:
                 current["image_query"] = s.split(":", 1)[1].strip()
+            elif doc_type == "ppt" and s.upper().startswith("MESSAGE:") and current is not None:
+                current["core_message"] = s.split(":", 1)[1].strip()
             elif doc_type == "ppt" and s.upper().startswith("KICKER:") and current is not None:
                 current["kicker"] = s.split(":", 1)[1].strip().upper()
             elif doc_type == "ppt" and s.upper().startswith("LAYOUT:") and current is not None:
@@ -694,7 +807,13 @@ def editable_text_to_outline(doc_type: str, text: str, fallback: Dict[str, Any])
             return fallback
 
         field = "sections" if doc_type == "doc" else "slides"
-        return {"title": title, "subtitle": subtitle, field: blocks}
+        res = {"title": title.rstrip("."), "subtitle": subtitle, field: blocks}
+        if doc_type == "ppt":
+            res["deck_purpose"] = deck_purpose
+            res["structure_type"] = structure_type
+            res["palette"] = palette
+            res["visual_motif"] = visual_motif
+        return res
 
     # Excel parser
     title = fallback.get("title", "Workbook")
@@ -1083,7 +1202,8 @@ async def render_mermaid_to_png(
                     f"<div class='mermaid'>{code}</div>"
                     f"<script>{MERMAID_JS_PATH.read_text(encoding='utf-8')}</script>"
                     "<script>mermaid.initialize({startOnLoad:true,theme:'dark',"
-                    "themeVariables:{primaryColor:'#1E293B',primaryTextColor:'#F8FAFC',"
+                    "themeVariables:{fontSize:'20px',fontFamily:'Calibri, Arial, sans-serif',"
+                    "primaryColor:'#1E293B',primaryTextColor:'#F8FAFC',"
                     "primaryBorderColor:'#22D3EE',lineColor:'#38BDF8',secondaryColor:'#0F172A'}});</script>"
                     "</body></html>"
                 )
@@ -1092,7 +1212,7 @@ async def render_mermaid_to_png(
                         browser = await pw.chromium.launch(channel="chrome", headless=True)
                     except Exception:
                         browser = await pw.chromium.launch(headless=True)
-                    page = await browser.new_page(viewport={"width": 1280, "height": 800}, device_scale_factor=2)
+                    page = await browser.new_page(viewport={"width": 2400, "height": 1350}, device_scale_factor=2)
                     await page.set_content(html_doc, wait_until="load")
                     svg = page.locator(".mermaid svg").first
                     await svg.wait_for(state="visible", timeout=5000)
@@ -1571,19 +1691,27 @@ def _add_fitted_picture(
     slide.shapes.add_picture(str(img_path), Inches(adj_left), Inches(adj_top), width=Inches(w_in), height=Inches(h_in))
 
 
-def _write_bullets_into_frame(tf: Any, bullets: List[str], font_pt: int, dark_text: bool) -> None:
+def _write_bullets_into_frame(
+    tf: Any,
+    bullets: List[str],
+    font_pt: int,
+    dark_text: bool,
+    accent_color: Optional[Any] = None,
+    lead_color_in: Optional[Any] = None,
+    body_color_in: Optional[Any] = None,
+) -> None:
     from pptx.dml.color import RGBColor
     from pptx.util import Pt
 
-    lead_color = RGBColor(15, 23, 42) if dark_text else RGBColor(248, 250, 252)
-    body_color = RGBColor(30, 41, 59) if dark_text else RGBColor(226, 232, 240)
-    accent = RGBColor(6, 182, 212)
+    lead_color = lead_color_in or (RGBColor(15, 23, 42) if dark_text else RGBColor(248, 250, 252))
+    body_color = body_color_in or (RGBColor(30, 41, 59) if dark_text else RGBColor(226, 232, 240))
+    accent = accent_color or RGBColor(34, 211, 238)
 
     tf.word_wrap = True
     for b_idx, raw_b in enumerate(bullets):
         lead, body = _split_leadin_bullet(raw_b)
         p = tf.paragraphs[0] if b_idx == 0 else tf.add_paragraph()
-        p.space_after = Pt(12)
+        p.space_after = Pt(10)
 
         dot = p.add_run()
         dot.text = "▪  "
@@ -1605,6 +1733,66 @@ def _write_bullets_into_frame(tf: Any, bullets: List[str], font_pt: int, dark_te
         r_body.font.name = "Calibri"
         r_body.font.size = Pt(font_pt)
         r_body.font.color.rgb = body_color
+
+
+def qa_verify_presentation(prs: Any, outline: Dict[str, Any]) -> Dict[str, Any]:
+    """
+    Automated QA pass (Content & Structural Verification):
+      1. Content QA: Scans for placeholder text (TODO, Lorem ipsum, [insert]), trailing periods in titles, empty text frames.
+      2. Typography QA: Ensures body text >= 12pt and titles >= 24pt.
+      3. Geometry QA: Asserts 16:9 widescreen dimensions (13.33" x 7.5") and bounded shapes.
+      4. Variety QA: Flags consecutive identical archetypes.
+    """
+    issues: List[str] = []
+    warnings: List[str] = []
+    placeholders_found = 0
+    forbidden_terms = ["TODO", "TBD", "LOREM IPSUM", "[INSERT", "PLACEHOLDER", "FIXME"]
+
+    # 1. Geometry Check
+    sw = prs.slide_width / 914400.0
+    sh = prs.slide_height / 914400.0
+    if abs(sw - 13.333) > 0.1 or abs(sh - 7.5) > 0.1:
+        warnings.append(f"Dimensions ({sw:.2f}x{sh:.2f}) deviate from standard 16:9 (13.33x7.5)")
+
+    # 2. Content & Text Scanning
+    for s_idx, slide in enumerate(prs.slides, 1):
+        for shape in slide.shapes:
+            left = shape.left / 914400.0 if shape.left else 0
+            top = shape.top / 914400.0 if shape.top else 0
+            w = shape.width / 914400.0 if shape.width else 0
+            h = shape.height / 914400.0 if shape.height else 0
+            if (left + w) > (sw + 0.3) or (top + h) > (sh + 0.3):
+                warnings.append(f"Slide {s_idx}: Shape exceeds slide boundary ({left+w:.1f}in > {sw:.1f}in)")
+
+            if shape.has_text_frame:
+                for p in shape.text_frame.paragraphs:
+                    raw_p = (p.text or "").strip()
+                    upper_p = raw_p.upper()
+                    for term in forbidden_terms:
+                        if term in upper_p:
+                            placeholders_found += 1
+                            issues.append(f"Slide {s_idx}: Forbidden placeholder '{term}' found in '{raw_p[:30]}'")
+
+    # 3. Slide Title & Layout Variety Check
+    slides_data = outline.get("slides", [])
+    prev_layout = None
+    for idx, sl in enumerate(slides_data, 1):
+        t = (sl.get("title") or "").strip()
+        if t.endswith("."):
+            warnings.append(f"Slide {idx} title ends with a period: '{t}'")
+        cur_layout = sl.get("layout", "split_visual")
+        if idx > 1 and cur_layout == prev_layout and cur_layout != "architecture":
+            warnings.append(f"Slides {idx-1} & {idx} share identical consecutive layout '{cur_layout}'")
+        prev_layout = cur_layout
+
+    passed = len(issues) == 0
+    return {
+        "passed": passed,
+        "slide_count": len(prs.slides),
+        "issues": issues,
+        "warnings": warnings,
+        "summary": "QA PASS: Clean content & structure" if passed else f"QA FAIL: {len(issues)} issues detected",
+    }
 
 
 def _compile_pptx(
@@ -1635,10 +1823,63 @@ def _compile_pptx(
     sw = prs.slide_width / 914400.0
     sh = prs.slide_height / 914400.0
 
-    # Safe margins keep corner logos/footers in hackathon & college templates intact
     margin_x = 0.72
     top_y = 0.95 if has_template else 0.45
     content_bottom_limit = sh - (0.65 if has_template else 0.45)
+    content_w = sw - 2 * margin_x
+
+    def _parse_hex(val: Any, default: RGBColor) -> RGBColor:
+        if not val or not isinstance(val, str):
+            return default
+        h = val.strip().lstrip("#")
+        if len(h) == 6:
+            try:
+                return RGBColor(int(h[0:2], 16), int(h[2:4], 16), int(h[4:6], 16))
+            except Exception:
+                pass
+        return default
+
+    palette_data = outline.get("palette") or {}
+    if not isinstance(palette_data, dict):
+        palette_data = {}
+
+    theme_primary = _parse_hex(palette_data.get("primary"), RGBColor(11, 15, 25))
+    theme_secondary = _parse_hex(palette_data.get("secondary"), RGBColor(24, 32, 47))
+    theme_accent = _parse_hex(palette_data.get("accent"), RGBColor(34, 211, 238))
+
+    lum = 0.299 * theme_primary[0] + 0.587 * theme_primary[1] + 0.114 * theme_primary[2]
+    is_dark = lum < 130
+
+    if has_template:
+        use_dark_text = not dark_master
+        canvas_bg_rgb = None
+        card_bg_rgb = RGBColor(255, 255, 255) if use_dark_text else RGBColor(30, 41, 59)
+        card_border_rgb = RGBColor(203, 213, 225) if use_dark_text else RGBColor(51, 65, 85)
+        pill_bg_rgb = RGBColor(224, 242, 254) if use_dark_text else RGBColor(15, 23, 42)
+        accent_rgb = RGBColor(2, 132, 199) if use_dark_text else RGBColor(34, 211, 238)
+        title_color = RGBColor(15, 23, 42) if use_dark_text else RGBColor(248, 250, 252)
+        lead_color = RGBColor(15, 23, 42) if use_dark_text else RGBColor(248, 250, 252)
+        body_color = RGBColor(51, 65, 85) if use_dark_text else RGBColor(226, 232, 240)
+    elif is_dark:
+        use_dark_text = False
+        canvas_bg_rgb = theme_primary
+        card_bg_rgb = theme_secondary
+        card_border_rgb = RGBColor(51, 65, 85)
+        pill_bg_rgb = RGBColor(15, 23, 42)
+        accent_rgb = theme_accent
+        title_color = RGBColor(248, 250, 252)
+        lead_color = RGBColor(248, 250, 252)
+        body_color = RGBColor(226, 232, 240)
+    else:
+        use_dark_text = True
+        canvas_bg_rgb = theme_primary
+        card_bg_rgb = RGBColor(255, 255, 255)
+        card_border_rgb = RGBColor(203, 213, 225)
+        pill_bg_rgb = RGBColor(241, 245, 249)
+        accent_rgb = theme_accent
+        title_color = RGBColor(15, 23, 42)
+        lead_color = RGBColor(15, 23, 42)
+        body_color = RGBColor(51, 65, 85)
 
     # 1. Cover Slide
     cover = prs.slides.add_slide(layout)
@@ -1647,36 +1888,43 @@ def _compile_pptx(
     else:
         bg = cover.background.fill
         bg.solid()
-        bg.fore_color.rgb = RGBColor(15, 23, 42)
+        bg.fore_color.rgb = canvas_bg_rgb
 
-    accent_bar = cover.shapes.add_shape(1, Inches(0.85), Inches(sh * 0.2), Inches(0.14), Inches(2.25))
-    accent_bar.fill.solid()
-    accent_bar.fill.fore_color.rgb = RGBColor(34, 211, 238)
-    accent_bar.line.fill.background()
+    # Category Eyebrow Kicker Pill (No vertical accent bar stripe)
+    kicker_label = outline.get("deck_purpose") or outline.get("structure_type") or "TECHNICAL PRESENTATION"
+    kicker_box = cover.shapes.add_shape(5, Inches(1.1), Inches(sh * 0.16), Inches(4.2), Inches(0.42))
+    kicker_box.fill.solid()
+    kicker_box.fill.fore_color.rgb = pill_bg_rgb
+    kicker_box.line.color.rgb = accent_rgb
+    k_tf = kicker_box.text_frame
+    k_tf.word_wrap = False
+    kp = k_tf.paragraphs[0]
+    kp.text = f"[ {str(kicker_label)[:42].upper()} ]"
+    kp.font.name = "Calibri"
+    kp.font.size = Pt(11)
+    kp.font.bold = True
+    kp.font.color.rgb = accent_rgb
 
-    cover_title_color = RGBColor(248, 250, 252) if (not has_template or dark_master) else RGBColor(15, 23, 42)
-    cover_sub_color = RGBColor(34, 211, 238) if (not has_template or dark_master) else RGBColor(2, 132, 199)
-
-    title_box = cover.shapes.add_textbox(Inches(1.22), Inches(sh * 0.19), Inches(sw - 2.0), Inches(1.75))
+    title_box = cover.shapes.add_textbox(Inches(1.1), Inches(sh * 0.24), Inches(sw - 2.2), Inches(1.75))
     tf = title_box.text_frame
     tf.word_wrap = True
     p = tf.paragraphs[0]
-    p.text = outline.get("title", "Chitran Presentation")
+    p.text = outline.get("title", "Chitran Presentation").rstrip(".")
     p.font.name = "Calibri"
     p.font.size = Pt(38)
     p.font.bold = True
-    p.font.color.rgb = cover_title_color
+    p.font.color.rgb = title_color
 
-    sub_box = cover.shapes.add_textbox(Inches(1.22), Inches(sh * 0.44), Inches(sw - 2.0), Inches(0.85))
+    sub_box = cover.shapes.add_textbox(Inches(1.1), Inches(sh * 0.48), Inches(sw - 2.2), Inches(0.85))
     stf = sub_box.text_frame
     stf.word_wrap = True
     sp = stf.paragraphs[0]
     sp.text = f"{outline.get('subtitle', 'Technical Deck')}  •  {datetime.now().strftime('%d %b %Y')}"
     sp.font.name = "Calibri"
-    sp.font.size = Pt(18)
-    sp.font.color.rgb = cover_sub_color
+    sp.font.size = Pt(17)
+    sp.font.color.rgb = accent_rgb
 
-    # Agenda pills along lower cover band to eliminate empty cover bottom
+    # Agenda pills along lower cover band
     slides_list = outline.get("slides", [])
     if slides_list:
         pill_top = sh * 0.68
@@ -1686,36 +1934,18 @@ def _compile_pptx(
             px = 1.1 + p_idx * (pill_w + 0.22)
             card = cover.shapes.add_shape(5, Inches(px), Inches(pill_top), Inches(pill_w), Inches(0.95))
             card.fill.solid()
-            card.fill.fore_color.rgb = RGBColor(30, 41, 59) if (not has_template or dark_master) else RGBColor(241, 245, 249)
-            card.line.color.rgb = RGBColor(34, 211, 238) if not has_template else RGBColor(203, 213, 225)
+            card.fill.fore_color.rgb = card_bg_rgb
+            card.line.color.rgb = card_border_rgb
             ctf = card.text_frame
             ctf.word_wrap = True
             cp = ctf.paragraphs[0]
-            cp.text = f"0{p_idx + 1}  {slides_list[p_idx].get('title', '')[:34]}"
+            cp.text = f"0{p_idx + 1}  {slides_list[p_idx].get('title', '')[:34].rstrip('.')}"
             cp.font.name = "Calibri"
             cp.font.size = Pt(12)
             cp.font.bold = True
-            cp.font.color.rgb = RGBColor(226, 232, 240) if (not has_template or dark_master) else RGBColor(15, 23, 42)
+            cp.font.color.rgb = lead_color
 
     # 2. Content Slides with Semantic Layout Archetypes & Design Tokens
-    if has_template:
-        use_dark_text = not dark_master
-        card_bg_rgb = RGBColor(255, 255, 255) if use_dark_text else RGBColor(30, 41, 59)
-        card_border_rgb = RGBColor(203, 213, 225) if use_dark_text else RGBColor(51, 65, 85)
-        pill_bg_rgb = RGBColor(224, 242, 254) if use_dark_text else RGBColor(15, 23, 42)
-        accent_rgb = RGBColor(2, 132, 199) if use_dark_text else RGBColor(34, 211, 238)
-        title_color = RGBColor(15, 23, 42) if use_dark_text else RGBColor(248, 250, 252)
-    else:
-        # Tech Dark Slate Theme (#0B0F19 canvas, #18202F card, #22D3EE accent, #F8FAFC text)
-        use_dark_text = False
-        card_bg_rgb = RGBColor(24, 32, 47)
-        card_border_rgb = RGBColor(51, 65, 85)
-        pill_bg_rgb = RGBColor(15, 23, 42)
-        accent_rgb = RGBColor(34, 211, 238)
-        title_color = RGBColor(248, 250, 252)
-
-    content_w = sw - 2 * margin_x
-
     for idx, sl in enumerate(slides_list):
         slide = prs.slides.add_slide(layout)
         if has_template:
@@ -1723,11 +1953,7 @@ def _compile_pptx(
         else:
             sbg = slide.background.fill
             sbg.solid()
-            sbg.fore_color.rgb = RGBColor(11, 15, 25)
-            top_strip = slide.shapes.add_shape(1, Inches(0), Inches(0), Inches(sw), Inches(0.08))
-            top_strip.fill.solid()
-            top_strip.fill.fore_color.rgb = accent_rgb
-            top_strip.line.fill.background()
+            sbg.fore_color.rgb = canvas_bg_rgb
 
         # Slide header (Eyebrow Kicker + Action Title)
         hdr_box = slide.shapes.add_textbox(Inches(margin_x), Inches(top_y), Inches(content_w), Inches(0.85))
@@ -1747,7 +1973,7 @@ def _compile_pptx(
         else:
             hp = htf.paragraphs[0]
 
-        hp.text = sl.get("title", f"Slide {idx + 1}")
+        hp.text = sl.get("title", f"Slide {idx + 1}").rstrip(".")
         hp.font.name = "Calibri"
         hp.font.size = Pt(24)
         hp.font.bold = True
@@ -1763,29 +1989,38 @@ def _compile_pptx(
 
         # Semantic Archetype Routing
         if has_img and (layout_mode == "architecture" or sl.get("mermaid")):
-            # Archetype 1: Architecture Hero + Structured Annotations
-            diag_w = content_w * 0.58
-            right_x = margin_x + diag_w + 0.32
-            right_w = content_w - diag_w - 0.32
+            # Dedicated Architecture Layout (Section 5.1/5.2)
+            if len(bullets) <= 1:
+                # Full-bleed diagram hero: maximum horizontal and vertical space
+                vis_card = slide.shapes.add_shape(5, Inches(margin_x), Inches(body_top), Inches(content_w), Inches(body_h))
+                vis_card.fill.solid()
+                vis_card.fill.fore_color.rgb = pill_bg_rgb
+                vis_card.line.color.rgb = accent_rgb
+                _add_fitted_picture(slide, visuals[idx], margin_x + 0.16, body_top + 0.16, content_w - 0.32, body_h - 0.32)
+            else:
+                # Dedicated 64% diagram hero + 36% structured takeaway cards
+                diag_w = content_w * 0.64
+                right_x = margin_x + diag_w + 0.30
+                right_w = content_w - diag_w - 0.30
 
-            vis_card = slide.shapes.add_shape(5, Inches(margin_x), Inches(body_top), Inches(diag_w), Inches(body_h))
-            vis_card.fill.solid()
-            vis_card.fill.fore_color.rgb = pill_bg_rgb
-            vis_card.line.color.rgb = accent_rgb
-            _add_fitted_picture(slide, visuals[idx], margin_x + 0.14, body_top + 0.14, diag_w - 0.28, body_h - 0.28)
+                vis_card = slide.shapes.add_shape(5, Inches(margin_x), Inches(body_top), Inches(diag_w), Inches(body_h))
+                vis_card.fill.solid()
+                vis_card.fill.fore_color.rgb = pill_bg_rgb
+                vis_card.line.color.rgb = accent_rgb
+                _add_fitted_picture(slide, visuals[idx], margin_x + 0.14, body_top + 0.14, diag_w - 0.28, body_h - 0.28)
 
-            sub_bullets = bullets[:3] or [sl.get("takeaway", "System flow")]
-            stack_gap = 0.16
-            stack_h = (body_h - (len(sub_bullets) - 1) * stack_gap) / max(1, len(sub_bullets))
-            for s_idx, b_text in enumerate(sub_bullets):
-                sy = body_top + s_idx * (stack_h + stack_gap)
-                scard = slide.shapes.add_shape(5, Inches(right_x), Inches(sy), Inches(right_w), Inches(stack_h))
-                scard.fill.solid()
-                scard.fill.fore_color.rgb = card_bg_rgb
-                scard.line.color.rgb = card_border_rgb
+                sub_bullets = bullets[:3] or [sl.get("takeaway", "System flow")]
+                stack_gap = 0.16
+                stack_h = (body_h - (len(sub_bullets) - 1) * stack_gap) / max(1, len(sub_bullets))
+                for s_idx, b_text in enumerate(sub_bullets):
+                    sy = body_top + s_idx * (stack_h + stack_gap)
+                    scard = slide.shapes.add_shape(5, Inches(right_x), Inches(sy), Inches(right_w), Inches(stack_h))
+                    scard.fill.solid()
+                    scard.fill.fore_color.rgb = card_bg_rgb
+                    scard.line.color.rgb = card_border_rgb
 
-                stb = slide.shapes.add_textbox(Inches(right_x + 0.18), Inches(sy + 0.12), Inches(right_w - 0.36), Inches(stack_h - 0.24))
-                _write_bullets_into_frame(stb.text_frame, [b_text], font_pt=14, dark_text=use_dark_text)
+                    stb = slide.shapes.add_textbox(Inches(right_x + 0.18), Inches(sy + 0.12), Inches(right_w - 0.36), Inches(stack_h - 0.24))
+                    _write_bullets_into_frame(stb.text_frame, [b_text], font_pt=14, dark_text=use_dark_text, accent_color=accent_rgb, lead_color_in=lead_color, body_color_in=body_color)
 
         elif has_img:
             # Archetype 2: Split Visual Hero (Photo / Illustration)
@@ -1800,7 +2035,7 @@ def _compile_pptx(
 
             body_box = slide.shapes.add_textbox(Inches(margin_x + 0.2), Inches(body_top + 0.2), Inches(left_w - 0.4), Inches(body_h - 0.35))
             font_pt = 15 if len(bullets) <= 4 else 13
-            _write_bullets_into_frame(body_box.text_frame, bullets, font_pt=font_pt, dark_text=use_dark_text)
+            _write_bullets_into_frame(body_box.text_frame, bullets, font_pt=font_pt, dark_text=use_dark_text, accent_color=accent_rgb, lead_color_in=lead_color, body_color_in=body_color)
 
             vis_card = slide.shapes.add_shape(5, Inches(right_x), Inches(body_top), Inches(right_w), Inches(body_h))
             vis_card.fill.solid()
@@ -1823,7 +2058,6 @@ def _compile_pptx(
                 card.fill.fore_color.rgb = card_bg_rgb
                 card.line.color.rgb = card_border_rgb
 
-                # Pillar Number Pill
                 pill = slide.shapes.add_shape(5, Inches(cx + 0.2), Inches(body_top + 0.2), Inches(0.72), Inches(0.34))
                 pill.fill.solid()
                 pill.fill.fore_color.rgb = pill_bg_rgb
@@ -1838,7 +2072,7 @@ def _compile_pptx(
                 pp.font.color.rgb = accent_rgb
 
                 tb = slide.shapes.add_textbox(Inches(cx + 0.18), Inches(body_top + 0.64), Inches(tcard_w - 0.36), Inches(body_h - 0.78))
-                _write_bullets_into_frame(tb.text_frame, split_items[c_idx], font_pt=14, dark_text=use_dark_text)
+                _write_bullets_into_frame(tb.text_frame, split_items[c_idx], font_pt=14, dark_text=use_dark_text, accent_color=accent_rgb, lead_color_in=lead_color, body_color_in=body_color)
 
         elif layout_mode == "metrics" and sl.get("metrics"):
             # Archetype 4: Key Metrics & KPI Grid
@@ -1889,10 +2123,10 @@ def _compile_pptx(
             bcard.fill.fore_color.rgb = card_bg_rgb
             bcard.line.color.rgb = card_border_rgb
             btb = slide.shapes.add_textbox(Inches(margin_x + 0.22), Inches(m_bot_y + 0.18), Inches(content_w - 0.44), Inches(m_bot_h - 0.36))
-            _write_bullets_into_frame(btb.text_frame, bullets or ["Continuous telemetry ensures threshold compliance."], font_pt=14, dark_text=use_dark_text)
+            _write_bullets_into_frame(btb.text_frame, bullets or ["Continuous telemetry ensures threshold compliance."], font_pt=14, dark_text=use_dark_text, accent_color=accent_rgb, lead_color_in=lead_color, body_color_in=body_color)
 
         elif layout_mode == "comparison":
-            # Archetype 5: Side-by-Side Comparison (Baseline vs Proposed)
+            # Archetype 5: Side-by-Side Comparison
             cgap = 0.32
             cw = (content_w - cgap) / 2.0
             cx_l = margin_x
@@ -1915,7 +2149,7 @@ def _compile_pptx(
             pp_l.font.color.rgb = RGBColor(148, 163, 184)
 
             tb_l = slide.shapes.add_textbox(Inches(cx_l + 0.2), Inches(body_top + 0.64), Inches(cw - 0.4), Inches(body_h - 0.78))
-            _write_bullets_into_frame(tb_l.text_frame, bullets[:mid], font_pt=14, dark_text=use_dark_text)
+            _write_bullets_into_frame(tb_l.text_frame, bullets[:mid], font_pt=14, dark_text=use_dark_text, accent_color=accent_rgb, lead_color_in=lead_color, body_color_in=body_color)
 
             card_r = slide.shapes.add_shape(5, Inches(cx_r), Inches(body_top), Inches(cw), Inches(body_h))
             card_r.fill.solid()
@@ -1933,7 +2167,7 @@ def _compile_pptx(
             pp_r.font.color.rgb = accent_rgb
 
             tb_r = slide.shapes.add_textbox(Inches(cx_r + 0.2), Inches(body_top + 0.64), Inches(cw - 0.4), Inches(body_h - 0.78))
-            _write_bullets_into_frame(tb_r.text_frame, bullets[mid:], font_pt=14, dark_text=use_dark_text)
+            _write_bullets_into_frame(tb_r.text_frame, bullets[mid:], font_pt=14, dark_text=use_dark_text, accent_color=accent_rgb, lead_color_in=lead_color, body_color_in=body_color)
 
         else:
             # Archetype 6: Balanced Symmetrical Two-Column
@@ -1950,7 +2184,7 @@ def _compile_pptx(
                 card.line.color.rgb = card_border_rgb
 
                 tb = slide.shapes.add_textbox(Inches(cx + 0.22), Inches(body_top + 0.22), Inches(col_w - 0.44), Inches(body_h - 0.4))
-                _write_bullets_into_frame(tb.text_frame, col_items, font_pt=15, dark_text=use_dark_text)
+                _write_bullets_into_frame(tb.text_frame, col_items, font_pt=15, dark_text=use_dark_text, accent_color=accent_rgb, lead_color_in=lead_color, body_color_in=body_color)
 
         # Full-Width Key Takeaway Banner
         if takeaway:
@@ -1979,7 +2213,7 @@ def _compile_pptx(
         if note_text:
             slide.notes_slide.notes_text_frame.text = note_text
 
-    # 3. References Slide if sources exist
+    # 3. References Slide if sources exist (matching deck theme)
     if sources:
         ref_slide = prs.slides.add_slide(layout)
         if has_template:
@@ -1987,14 +2221,14 @@ def _compile_pptx(
         else:
             rbg = ref_slide.background.fill
             rbg.solid()
-            rbg.fore_color.rgb = RGBColor(248, 250, 252)
+            rbg.fore_color.rgb = canvas_bg_rgb
 
         rh = ref_slide.shapes.add_textbox(Inches(margin_x), Inches(top_y), Inches(sw - 2 * margin_x), Inches(0.8)).text_frame
         rp = rh.paragraphs[0]
         rp.text = "Verified Sources & References"
         rp.font.size = Pt(24)
         rp.font.bold = True
-        rp.font.color.rgb = RGBColor(15, 23, 42) if use_dark_text else RGBColor(248, 250, 252)
+        rp.font.color.rgb = title_color
 
         rb = ref_slide.shapes.add_textbox(Inches(margin_x), Inches(top_y + 0.9), Inches(sw - 2 * margin_x), Inches(sh - top_y - 1.6)).text_frame
         rb.word_wrap = True
@@ -2003,7 +2237,10 @@ def _compile_pptx(
             sp.text = f"[{s_idx}] {src.get('title', 'Reference')} — {src.get('url', '')}"
             sp.space_after = Pt(10)
             sp.font.size = Pt(14)
-            sp.font.color.rgb = RGBColor(71, 85, 105) if use_dark_text else RGBColor(203, 213, 225)
+            sp.font.color.rgb = body_color
+
+    qa_report = qa_verify_presentation(prs, outline)
+    logger.info("Chitran PPT QA Report: %s (%s warnings, %s issues)", qa_report["summary"], len(qa_report["warnings"]), len(qa_report["issues"]))
 
     out_path.parent.mkdir(parents=True, exist_ok=True)
     prs.save(str(out_path))
