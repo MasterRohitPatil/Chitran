@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="daemon/assets/byte2/hero.png" alt="Ditto — Chitran Desktop Mascot" width="110"/>
+  <img src="plugin/assets/icon.png" alt="Ditto — Chitran Desktop Mascot" width="110"/>
 </p>
 
 <h1 align="center">Chitran <span style="font-weight:normal;">(with Ditto)</span></h1>
@@ -27,7 +27,7 @@ Ditto sits directly inside your Windows 11 taskbar (`daemon/mascot.py` + `daemon
 
 | Focused | Working | Alert | Paused | Hydration | Mail |
 | :---: | :---: | :---: | :---: | :---: | :---: |
-| <img src="daemon/assets/byte2/focused.png" width="56" alt="Focused"/> | <img src="daemon/assets/byte2/working.png" width="56" alt="Working"/> | <img src="daemon/assets/byte2/alert.png" width="56" alt="Alert"/> | <img src="daemon/assets/byte2/paused.png" width="56" alt="Paused"/> | <img src="daemon/assets/byte2/hydration.png" width="56" alt="Hydration"/> | <img src="daemon/assets/byte2/mail.png" width="56" alt="Mail"/> |
+| <img src="daemon/assets/ditto/focused.png" width="56" alt="Focused"/> | <img src="daemon/assets/ditto/working.png" width="56" alt="Working"/> | <img src="daemon/assets/ditto/alert.png" width="56" alt="Alert"/> | <img src="daemon/assets/ditto/paused.png" width="56" alt="Paused"/> | <img src="daemon/assets/ditto/hydration.png" width="56" alt="Hydration"/> | <img src="daemon/assets/ditto/mail.png" width="56" alt="Mail"/> |
 | Monitoring active | Background job running | Overdue goal / distraction | Reminders paused | Water / eye break | Gmail briefing ready |
 
 ---
