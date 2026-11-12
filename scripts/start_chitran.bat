@@ -12,3 +12,4 @@ cd /d "%DAEMON_DIR%"
 start "" %PYW% "%DAEMON_DIR%\server.py"
 timeout /t 1 /nobreak >nul
 start "" %PYW% "%DAEMON_DIR%\mascot.py"
+

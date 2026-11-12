@@ -253,22 +253,30 @@ def _build_outline_prompt(
         )
     elif doc_type == "ppt":
         schema_hint = (
-            '{"title": "Presentation Title", "subtitle": "Concise Deck Subtitle", '
-            '"slides": [{"title": "Slide Headline", '
-            '"layout": "split_visual", '
+            '{"title": "Conclusion-Led Presentation Title", "subtitle": "Concise Deck Subtitle", '
+            '"slides": [{"title": "Conclusion-Led Action Title", '
+            '"kicker": "CORE ARCHITECTURE", '
+            '"layout": "three_cards", '
             '"bullets": ["**Lead-in**: Concrete technical explanation (14-22 words)"], '
             '"takeaway": "1 concise bottom banner key takeaway", '
+            '"metrics": [{"value": "93%", "label": "Model Accuracy", "caption": "Evaluated on test split"}], '
             '"speaker_note": "1-2 sentence presenter note", '
             '"mermaid": "flowchart LR\\n  A[Client] --> B[API] --> C[DB]", '
             '"image_query": "2-3 word query"}]}'
         )
         rules = (
-            "Create 6 to 8 high-density slides (unless user instructions or template specify another count). "
-            "Each slide MUST have 4 rich bullets formatted '**Key Term**: concrete detail (14-22 words)' "
-            "plus a crisp `takeaway`. Choose `layout` from `split_visual` (text + visual/mermaid), "
-            "`diagram_focus`, or `two_column` (6 bullets split into two comparison cards). "
-            "For architecture/pipeline slides, include concise valid `mermaid` flowchart syntax (`flowchart LR` or `sequenceDiagram`, max 7 nodes). "
-            "Only set 2-3 word `image_query` on slides needing a real-world diagram/photo."
+            "Create 6 to 8 slides with rich semantic layout variety: "
+            "1. Give each slide an uppercase 2-3 word `kicker` (e.g. 'CORE ARCHITECTURE', 'PROBLEM STATEMENT', 'KEY METRICS', 'WORKFLOW PIPELINE') "
+            "   AND a conclusion-led action title that conveys the core finding (e.g. 'Decoupled Event-Driven Pipeline Prevents State Drift'). "
+            "2. Select an explicit `layout` archetype for each slide based on its content: "
+            "   - 'three_cards': 3 core pillars/concepts with 2 detailed bullets each. "
+            "   - 'architecture': Technical deep-dive with valid `mermaid` flowchart syntax (max 7 nodes) + 2 key takeaways. "
+            "   - 'metrics': 3-4 hero performance metrics with `value`, `label`, and `caption`. "
+            "   - 'split_visual': Text explanation on left + 2-3 word `image_query` on right. "
+            "   - 'comparison': 2 contrasted cards (e.g., Traditional vs Our Solution). "
+            "   - 'two_column': Balanced symmetrical 2-column cards. "
+            "3. Format all bullets with '**Lead-in**: explanation (14-22 words)'. "
+            "4. Provide a crisp 1-sentence bottom `takeaway` for every slide."
         )
     else:
         schema_hint = (
@@ -357,83 +365,80 @@ def _fallback_outline(doc_type: str, topic: str, sources: List[Dict[str, Any]]) 
     if doc_type == "ppt":
         slides = [
             {
-                "title": f"{clean_title}: Problem & Context",
+                "kicker": "PROBLEM & CONTEXT",
+                "title": f"{clean_title}: Problem Statement & Constraints",
                 "layout": "split_visual",
                 "bullets": [
-                    f"**Core Challenge**: Bottlenecks and operational friction in existing {clean_title} workflows.",
-                    "**Target Outcomes**: Measurable improvements in latency, accuracy, and developer velocity.",
-                    "**Constraints**: Zero-cost or bounded compute budgets with strict data privacy.",
-                    "**Scope**: End-to-end pipeline from ingestion through verified output delivery.",
+                    f"**Core Bottleneck**: Operational friction and manual overhead in existing {clean_title} workflows.",
+                    "**Target Metrics**: Measurable speedups in latency, precision, and developer throughput.",
+                    "**Resource Boundaries**: Strict zero-cost hosting tiers and zero persistent secret exposure.",
+                    "**Closed-Loop Pipeline**: End-to-end telemetry from discovery through verified artifact compilation.",
                 ],
-                "takeaway": f"Focuses {clean_title} on measurable production reliability over hype.",
+                "takeaway": f"Focuses {clean_title} on measurable production reliability over marketing hype.",
                 "speaker_note": f"Introduce the concrete engineering problem and measurable goals for {clean_title}.",
                 "mermaid": "",
                 "image_query": short_kw,
             },
             {
-                "title": "System Architecture & Data Flow",
-                "layout": "split_visual",
+                "kicker": "SYSTEM ARCHITECTURE",
+                "title": "Decoupled Event-Driven Pipeline & Storage",
+                "layout": "architecture",
                 "bullets": [
-                    "**Ingestion Layer**: Normalizes raw inputs and validates schemas before downstream work.",
-                    "**Processing Core**: Modular pipeline stages with clear single-responsibility interfaces.",
-                    "**Guardrail Gate**: Deterministic checks prevent silent failures or unsafe mutations.",
-                    "**Delivery Tier**: Clean outputs with transparent status and audit logging.",
+                    "**Ingestion Boundary**: Normalizes requests and validates schemas before persistent execution.",
+                    "**Modular Core**: Single-responsibility handlers isolate processing from UI rendering.",
+                    "**Deterministic Guardrails**: 95% quota circuit breakers prevent unintended billing.",
+                    "**Local Telemetry**: SQLite events record usage metrics without leaking data to cloud services.",
                 ],
-                "takeaway": "Decoupled pipeline layers enable independent testing and safe fallbacks.",
+                "takeaway": "Decoupled pipeline stages enable independent testing and deterministic offline fallback.",
                 "speaker_note": "Walk through the Mermaid flow from left to right covering validation and output.",
                 "mermaid": default_mermaid,
                 "image_query": "",
             },
             {
-                "title": "Tradeoffs, Security & Reliability",
-                "layout": "two_column",
-                "bullets": src_bullets[:4] or [
-                    "**Simplicity vs Overengineering**: Start with proven primitives before distributed queues.",
-                    "**Determinism vs Flexibility**: Keep critical rules deterministic; reserve AI for synthesis.",
-                    "**Cost Control**: Enforce usage quotas and caching before external API expansion.",
-                    "**Secret Hygiene**: Keep credentials in environment config and never inside logs.",
-                    "**Graceful Degradation**: Provide deterministic local fallbacks when upstream APIs stall.",
-                    "**Verification Gate**: Test boundary conditions automatically after every change.",
+                "kicker": "CORE ENGINEERING PILLARS",
+                "title": "Three Design Tenets Guiding Architecture",
+                "layout": "three_cards",
+                "bullets": [
+                    "**01 · Local-First Privacy**: Telemetry, habits, and vault profiles remain strictly on local disk.",
+                    "**02 · ₹0 Operational Cost**: Free-tier model routing with automatic local failovers and hard limits.",
+                    "**03 · Human-in-the-Loop**: Two-stage approval gates guarantee zero silent mutations or auto-submits.",
                 ],
-                "takeaway": "Resilient systems pair simple defaults with strict boundary validation.",
-                "speaker_note": "Highlight architectural tradeoffs and why each choice survives production edge cases.",
+                "takeaway": "Balancing autonomy with strict human oversight guarantees zero accidental data loss.",
+                "speaker_note": "Explain how each pillar directly addresses real enterprise and hackathon risks.",
                 "mermaid": "",
                 "image_query": "",
             },
             {
-                "title": "Execution Sequence & Request Lifecycle",
-                "layout": "split_visual",
-                "bullets": [
-                    "**Stage 1 — Discovery**: Gather verified context and structure an editable plan first.",
-                    "**Stage 2 — Review Gate**: Keep human approval mandatory before persistent side effects.",
-                    "**Stage 3 — Execution**: Render visual assets and compile outputs deterministically.",
-                    "**Stage 4 — Audit**: Return file paths, counts, and clear failure diagnostics.",
+                "kicker": "PERFORMANCE BENCHMARKS",
+                "title": "System Footprint & Verification Metrics",
+                "layout": "metrics",
+                "metrics": [
+                    {"value": "< 2s", "label": "Mentor Latency", "caption": "Groq & Gemini 3.5 failover"},
+                    {"value": "41 MB", "label": "RAM Footprint", "caption": "Daemon + taskbar mascot"},
+                    {"value": "95%", "label": "Quota Circuit Breaker", "caption": "Hard stop protects free tier"},
+                    {"value": "100%", "label": "Local Storage", "caption": "Zero private cloud sync"},
                 ],
-                "takeaway": "Two-stage human approval prevents wasted compute and broken deliverables.",
-                "speaker_note": "Explain the lifecycle from initial trigger to verified final artifact.",
-                "mermaid": (
-                    "sequenceDiagram\n"
-                    "    participant U as User\n"
-                    "    participant S as Engine\n"
-                    "    participant G as Guardrail\n"
-                    "    U->>S: Request Output\n"
-                    "    S->>G: Validate & Draft Plan\n"
-                    "    G-->>U: Review Gate\n"
-                    "    U->>S: Approve & Compile"
-                ),
+                "bullets": [
+                    "**Sub-Second Response**: Streamlined FastAPI server processes commands with zero UI blocking.",
+                    "**Negligible Footprint**: Python daemon uses less RAM than a single modern browser tab.",
+                ],
+                "takeaway": "Production engineering achieves high responsiveness with near-zero machine footprint.",
+                "speaker_note": "Highlight benchmark telemetry showing lightweight footprint and strict boundaries.",
+                "mermaid": "",
                 "image_query": "",
             },
             {
-                "title": "Implementation Roadmap & Next Steps",
+                "kicker": "IMPLEMENTATION ROADMAP",
+                "title": "Milestones, Verification Gates & Rollout",
                 "layout": "two_column",
                 "bullets": [
-                    "**Phase 1 — Foundation**: Lock schema contracts and clean module boundaries first.",
-                    "**Phase 2 — Core Pipeline**: Implement deterministic handlers with meaningful defaults.",
-                    "**Phase 3 — Automated Checks**: Cover nominal flows, edge inputs, and error recovery.",
-                    "**Phase 4 — Release Readiness**: Review diffs, latency metrics, and operator docs.",
+                    "**Phase 1 — Schema Locking**: Establish strict contracts and sanitize input boundaries.",
+                    "**Phase 2 — Core Engine**: Implement deterministic local handlers with offline fallbacks.",
+                    "**Phase 3 — Verification Suite**: Automated end-to-end tests covering nominal and edge paths.",
+                    "**Phase 4 — Production Release**: Operational runbooks, clear telemetry, and reproducible setups.",
                 ],
-                "takeaway": "Ship a clean verified slice early, then expand capabilities incrementally.",
-                "speaker_note": "Close with concrete engineering milestones and verification gates.",
+                "takeaway": "Ship a verified MVP early, then scale capabilities with automated test regression gates.",
+                "speaker_note": "Conclude with concrete delivery milestones and quality assurance criteria.",
                 "mermaid": "",
                 "image_query": "",
             },
@@ -483,21 +488,45 @@ def _normalize_outline_structure(doc_type: str, raw: Dict[str, Any], topic: str)
 
     if doc_type == "ppt":
         slides = []
-        for sl in raw.get("slides", []):
+        for idx, sl in enumerate(raw.get("slides", [])):
             if not isinstance(sl, dict):
                 continue
             bullets = [str(b).strip() for b in sl.get("bullets", []) if str(b).strip()]
             layout = str(sl.get("layout") or "split_visual").strip().lower()
-            if layout not in ("split_visual", "two_column", "diagram_focus"):
-                layout = "split_visual"
+            if layout not in ("three_cards", "architecture", "metrics", "split_visual", "comparison", "two_column"):
+                if str(sl.get("mermaid") or "").strip():
+                    layout = "architecture"
+                elif len(bullets) == 3:
+                    layout = "three_cards"
+                else:
+                    layout = "split_visual"
+
+            kicker = str(sl.get("kicker") or "").strip().upper()
+            if not kicker:
+                default_kickers = ["PROBLEM STATEMENT", "SYSTEM ARCHITECTURE", "CORE PILLARS", "KEY METRICS", "WORKFLOW LIFECYCLE", "IMPLEMENTATION ROADMAP"]
+                kicker = default_kickers[idx % len(default_kickers)]
+
+            raw_metrics = sl.get("metrics") or []
+            clean_metrics = []
+            if isinstance(raw_metrics, list):
+                for m in raw_metrics:
+                    if isinstance(m, dict) and "value" in m:
+                        clean_metrics.append({
+                            "value": str(m.get("value", "")).strip(),
+                            "label": str(m.get("label", "")).strip(),
+                            "caption": str(m.get("caption", "")).strip(),
+                        })
+
             raw_iq = str(sl.get("image_query") or "").strip()
             slides.append({
                 "title": str(sl.get("title") or "Slide").strip(),
+                "kicker": kicker,
                 "layout": layout,
                 "bullets": bullets or ["Key takeaway"],
                 "takeaway": str(sl.get("takeaway") or "").strip(),
                 "speaker_note": str(sl.get("speaker_note") or "").strip(),
                 "mermaid": str(sl.get("mermaid") or "").strip(),
+                "metrics": clean_metrics,
                 "image_query": optimize_image_query(raw_iq, sl.get("title", "")) if raw_iq else "",
             })
         if not slides:
@@ -540,6 +569,8 @@ def outline_to_editable_text(doc_type: str, outline: Dict[str, Any]) -> str:
         for item in items:
             lines.append("")
             lines.append(f"## {item.get(key, 'Section')}")
+            if doc_type == "ppt" and item.get("kicker"):
+                lines.append(f"KICKER: {item['kicker']}")
             if doc_type == "ppt" and item.get("layout"):
                 lines.append(f"LAYOUT: {item['layout']}")
             for b in item.get("bullets", []):
@@ -644,9 +675,11 @@ def editable_text_to_outline(doc_type: str, text: str, fallback: Dict[str, Any])
                 current["bullets"].append(s[2:].strip())
             elif s.upper().startswith("IMAGE:") and current is not None:
                 current["image_query"] = s.split(":", 1)[1].strip()
+            elif doc_type == "ppt" and s.upper().startswith("KICKER:") and current is not None:
+                current["kicker"] = s.split(":", 1)[1].strip().upper()
             elif doc_type == "ppt" and s.upper().startswith("LAYOUT:") and current is not None:
                 cand_layout = s.split(":", 1)[1].strip().lower()
-                if cand_layout in ("split_visual", "two_column", "diagram_focus"):
+                if cand_layout in ("three_cards", "architecture", "metrics", "split_visual", "comparison", "two_column"):
                     current["layout"] = cand_layout
             elif doc_type == "ppt" and s.upper().startswith("TAKEAWAY:") and current is not None:
                 current["takeaway"] = s.split(":", 1)[1].strip()
@@ -1664,8 +1697,25 @@ def _compile_pptx(
             cp.font.bold = True
             cp.font.color.rgb = RGBColor(226, 232, 240) if (not has_template or dark_master) else RGBColor(15, 23, 42)
 
-    # 2. Content Slides
-    use_dark_text = not dark_master
+    # 2. Content Slides with Semantic Layout Archetypes & Design Tokens
+    if has_template:
+        use_dark_text = not dark_master
+        card_bg_rgb = RGBColor(255, 255, 255) if use_dark_text else RGBColor(30, 41, 59)
+        card_border_rgb = RGBColor(203, 213, 225) if use_dark_text else RGBColor(51, 65, 85)
+        pill_bg_rgb = RGBColor(224, 242, 254) if use_dark_text else RGBColor(15, 23, 42)
+        accent_rgb = RGBColor(2, 132, 199) if use_dark_text else RGBColor(34, 211, 238)
+        title_color = RGBColor(15, 23, 42) if use_dark_text else RGBColor(248, 250, 252)
+    else:
+        # Tech Dark Slate Theme (#0B0F19 canvas, #18202F card, #22D3EE accent, #F8FAFC text)
+        use_dark_text = False
+        card_bg_rgb = RGBColor(24, 32, 47)
+        card_border_rgb = RGBColor(51, 65, 85)
+        pill_bg_rgb = RGBColor(15, 23, 42)
+        accent_rgb = RGBColor(34, 211, 238)
+        title_color = RGBColor(248, 250, 252)
+
+    content_w = sw - 2 * margin_x
+
     for idx, sl in enumerate(slides_list):
         slide = prs.slides.add_slide(layout)
         if has_template:
@@ -1673,83 +1723,257 @@ def _compile_pptx(
         else:
             sbg = slide.background.fill
             sbg.solid()
-            sbg.fore_color.rgb = RGBColor(248, 250, 252)
-            top_strip = slide.shapes.add_shape(1, Inches(0), Inches(0), Inches(sw), Inches(0.11))
+            sbg.fore_color.rgb = RGBColor(11, 15, 25)
+            top_strip = slide.shapes.add_shape(1, Inches(0), Inches(0), Inches(sw), Inches(0.08))
             top_strip.fill.solid()
-            top_strip.fill.fore_color.rgb = RGBColor(6, 182, 212)
+            top_strip.fill.fore_color.rgb = accent_rgb
             top_strip.line.fill.background()
 
-        # Slide header
-        hdr_box = slide.shapes.add_textbox(Inches(margin_x), Inches(top_y), Inches(sw - 2 * margin_x), Inches(0.75))
+        # Slide header (Eyebrow Kicker + Action Title)
+        hdr_box = slide.shapes.add_textbox(Inches(margin_x), Inches(top_y), Inches(content_w), Inches(0.85))
         htf = hdr_box.text_frame
         htf.word_wrap = True
-        hp = htf.paragraphs[0]
+
+        kicker_text = str(sl.get("kicker") or "").strip().upper()
+        if kicker_text:
+            kp = htf.paragraphs[0]
+            kp.text = f"[ {kicker_text} ]"
+            kp.font.name = "Calibri"
+            kp.font.size = Pt(11)
+            kp.font.bold = True
+            kp.font.color.rgb = accent_rgb
+            kp.space_after = Pt(2)
+            hp = htf.add_paragraph()
+        else:
+            hp = htf.paragraphs[0]
+
         hp.text = sl.get("title", f"Slide {idx + 1}")
         hp.font.name = "Calibri"
-        hp.font.size = Pt(26)
+        hp.font.size = Pt(24)
         hp.font.bold = True
-        hp.font.color.rgb = RGBColor(15, 23, 42) if use_dark_text else RGBColor(248, 250, 252)
+        hp.font.color.rgb = title_color
 
         has_img = idx in visuals and visuals[idx].exists()
         takeaway = (sl.get("takeaway") or "").strip()
-        body_top = top_y + 0.88
-        takeaway_h = 0.56 if takeaway else 0.0
-        body_h = max(2.8, content_bottom_limit - body_top - takeaway_h - (0.18 if takeaway else 0.0))
+        body_top = top_y + 0.95
+        takeaway_h = 0.54 if takeaway else 0.0
+        body_h = max(2.8, content_bottom_limit - body_top - takeaway_h - (0.16 if takeaway else 0.0))
         bullets = sl.get("bullets", [])
+        layout_mode = str(sl.get("layout") or "split_visual").lower()
 
-        if has_img:
-            # Split layout: generous text left + large visual/diagram card right
-            left_w = (sw - 2 * margin_x) * 0.44
-            right_x = margin_x + left_w + 0.35
-            right_w = (sw - margin_x) - right_x
+        # Semantic Archetype Routing
+        if has_img and (layout_mode == "architecture" or sl.get("mermaid")):
+            # Archetype 1: Architecture Hero + Structured Annotations
+            diag_w = content_w * 0.58
+            right_x = margin_x + diag_w + 0.32
+            right_w = content_w - diag_w - 0.32
+
+            vis_card = slide.shapes.add_shape(5, Inches(margin_x), Inches(body_top), Inches(diag_w), Inches(body_h))
+            vis_card.fill.solid()
+            vis_card.fill.fore_color.rgb = pill_bg_rgb
+            vis_card.line.color.rgb = accent_rgb
+            _add_fitted_picture(slide, visuals[idx], margin_x + 0.14, body_top + 0.14, diag_w - 0.28, body_h - 0.28)
+
+            sub_bullets = bullets[:3] or [sl.get("takeaway", "System flow")]
+            stack_gap = 0.16
+            stack_h = (body_h - (len(sub_bullets) - 1) * stack_gap) / max(1, len(sub_bullets))
+            for s_idx, b_text in enumerate(sub_bullets):
+                sy = body_top + s_idx * (stack_h + stack_gap)
+                scard = slide.shapes.add_shape(5, Inches(right_x), Inches(sy), Inches(right_w), Inches(stack_h))
+                scard.fill.solid()
+                scard.fill.fore_color.rgb = card_bg_rgb
+                scard.line.color.rgb = card_border_rgb
+
+                stb = slide.shapes.add_textbox(Inches(right_x + 0.18), Inches(sy + 0.12), Inches(right_w - 0.36), Inches(stack_h - 0.24))
+                _write_bullets_into_frame(stb.text_frame, [b_text], font_pt=14, dark_text=use_dark_text)
+
+        elif has_img:
+            # Archetype 2: Split Visual Hero (Photo / Illustration)
+            left_w = content_w * 0.44
+            right_x = margin_x + left_w + 0.32
+            right_w = content_w - left_w - 0.32
 
             text_card = slide.shapes.add_shape(5, Inches(margin_x), Inches(body_top), Inches(left_w), Inches(body_h))
             text_card.fill.solid()
-            text_card.fill.fore_color.rgb = RGBColor(255, 255, 255) if use_dark_text else RGBColor(30, 41, 59)
-            text_card.line.color.rgb = RGBColor(226, 232, 240) if use_dark_text else RGBColor(51, 65, 85)
+            text_card.fill.fore_color.rgb = card_bg_rgb
+            text_card.line.color.rgb = card_border_rgb
 
-            body_box = slide.shapes.add_textbox(
-                Inches(margin_x + 0.2), Inches(body_top + 0.2), Inches(left_w - 0.4), Inches(body_h - 0.35)
-            )
-            font_pt = 16 if len(bullets) <= 4 else 14
+            body_box = slide.shapes.add_textbox(Inches(margin_x + 0.2), Inches(body_top + 0.2), Inches(left_w - 0.4), Inches(body_h - 0.35))
+            font_pt = 15 if len(bullets) <= 4 else 13
             _write_bullets_into_frame(body_box.text_frame, bullets, font_pt=font_pt, dark_text=use_dark_text)
 
             vis_card = slide.shapes.add_shape(5, Inches(right_x), Inches(body_top), Inches(right_w), Inches(body_h))
             vis_card.fill.solid()
-            vis_card.fill.fore_color.rgb = RGBColor(15, 23, 42)
-            vis_card.line.color.rgb = RGBColor(34, 211, 238)
+            vis_card.fill.fore_color.rgb = pill_bg_rgb
+            vis_card.line.color.rgb = accent_rgb
             _add_fitted_picture(slide, visuals[idx], right_x + 0.14, body_top + 0.14, right_w - 0.28, body_h - 0.28)
+
+        elif layout_mode == "three_cards" or (len(bullets) == 3 and layout_mode != "metrics"):
+            # Archetype 3: Three Feature / Pillar Cards
+            tgap = 0.26
+            tcard_w = (content_w - 2 * tgap) / 3.0
+            split_items = [bullets[i:i+2] for i in range(0, min(6, len(bullets)), max(1, (len(bullets) + 2) // 3))]
+            while len(split_items) < 3:
+                split_items.append(["Operational detail."])
+
+            for c_idx in range(3):
+                cx = margin_x + c_idx * (tcard_w + tgap)
+                card = slide.shapes.add_shape(5, Inches(cx), Inches(body_top), Inches(tcard_w), Inches(body_h))
+                card.fill.solid()
+                card.fill.fore_color.rgb = card_bg_rgb
+                card.line.color.rgb = card_border_rgb
+
+                # Pillar Number Pill
+                pill = slide.shapes.add_shape(5, Inches(cx + 0.2), Inches(body_top + 0.2), Inches(0.72), Inches(0.34))
+                pill.fill.solid()
+                pill.fill.fore_color.rgb = pill_bg_rgb
+                pill.line.color.rgb = accent_rgb
+                ptf = pill.text_frame
+                ptf.word_wrap = False
+                pp = ptf.paragraphs[0]
+                pp.text = f"0{c_idx + 1}"
+                pp.font.name = "Calibri"
+                pp.font.size = Pt(11)
+                pp.font.bold = True
+                pp.font.color.rgb = accent_rgb
+
+                tb = slide.shapes.add_textbox(Inches(cx + 0.18), Inches(body_top + 0.64), Inches(tcard_w - 0.36), Inches(body_h - 0.78))
+                _write_bullets_into_frame(tb.text_frame, split_items[c_idx], font_pt=14, dark_text=use_dark_text)
+
+        elif layout_mode == "metrics" and sl.get("metrics"):
+            # Archetype 4: Key Metrics & KPI Grid
+            m_list = sl.get("metrics") or []
+            n_m = min(len(m_list), 4)
+            mgap = 0.22
+            mw = (content_w - (n_m - 1) * mgap) / max(1, n_m)
+            m_top_h = body_h * 0.44
+            m_bot_h = body_h - m_top_h - 0.22
+            m_bot_y = body_top + m_top_h + 0.22
+
+            for m_idx in range(n_m):
+                mx = margin_x + m_idx * (mw + mgap)
+                mcard = slide.shapes.add_shape(5, Inches(mx), Inches(body_top), Inches(mw), Inches(m_top_h))
+                mcard.fill.solid()
+                mcard.fill.fore_color.rgb = card_bg_rgb
+                mcard.line.color.rgb = accent_rgb
+
+                mtb = slide.shapes.add_textbox(Inches(mx + 0.14), Inches(body_top + 0.12), Inches(mw - 0.28), Inches(m_top_h - 0.24))
+                mtf = mtb.text_frame
+                mtf.word_wrap = True
+
+                vp = mtf.paragraphs[0]
+                vp.text = m_list[m_idx].get("value", "")
+                vp.font.name = "Calibri"
+                vp.font.size = Pt(36)
+                vp.font.bold = True
+                vp.font.color.rgb = accent_rgb
+                vp.space_after = Pt(2)
+
+                lp = mtf.add_paragraph()
+                lp.text = m_list[m_idx].get("label", "")
+                lp.font.name = "Calibri"
+                lp.font.size = Pt(13)
+                lp.font.bold = True
+                lp.font.color.rgb = title_color
+
+                cap = m_list[m_idx].get("caption", "")
+                if cap:
+                    cp = mtf.add_paragraph()
+                    cp.text = cap
+                    cp.font.name = "Calibri"
+                    cp.font.size = Pt(10)
+                    cp.font.color.rgb = RGBColor(148, 163, 184) if not use_dark_text else RGBColor(100, 116, 139)
+
+            bcard = slide.shapes.add_shape(5, Inches(margin_x), Inches(m_bot_y), Inches(content_w), Inches(m_bot_h))
+            bcard.fill.solid()
+            bcard.fill.fore_color.rgb = card_bg_rgb
+            bcard.line.color.rgb = card_border_rgb
+            btb = slide.shapes.add_textbox(Inches(margin_x + 0.22), Inches(m_bot_y + 0.18), Inches(content_w - 0.44), Inches(m_bot_h - 0.36))
+            _write_bullets_into_frame(btb.text_frame, bullets or ["Continuous telemetry ensures threshold compliance."], font_pt=14, dark_text=use_dark_text)
+
+        elif layout_mode == "comparison":
+            # Archetype 5: Side-by-Side Comparison (Baseline vs Proposed)
+            cgap = 0.32
+            cw = (content_w - cgap) / 2.0
+            cx_l = margin_x
+            cx_r = margin_x + cw + cgap
+            mid = max(1, (len(bullets) + 1) // 2)
+
+            card_l = slide.shapes.add_shape(5, Inches(cx_l), Inches(body_top), Inches(cw), Inches(body_h))
+            card_l.fill.solid()
+            card_l.fill.fore_color.rgb = card_bg_rgb
+            card_l.line.color.rgb = RGBColor(148, 163, 184)
+
+            pill_l = slide.shapes.add_shape(5, Inches(cx_l + 0.2), Inches(body_top + 0.2), Inches(2.3), Inches(0.34))
+            pill_l.fill.solid()
+            pill_l.fill.fore_color.rgb = pill_bg_rgb
+            pill_l.line.color.rgb = RGBColor(148, 163, 184)
+            pp_l = pill_l.text_frame.paragraphs[0]
+            pp_l.text = "TRADITIONAL / CHALLENGE"
+            pp_l.font.size = Pt(10)
+            pp_l.font.bold = True
+            pp_l.font.color.rgb = RGBColor(148, 163, 184)
+
+            tb_l = slide.shapes.add_textbox(Inches(cx_l + 0.2), Inches(body_top + 0.64), Inches(cw - 0.4), Inches(body_h - 0.78))
+            _write_bullets_into_frame(tb_l.text_frame, bullets[:mid], font_pt=14, dark_text=use_dark_text)
+
+            card_r = slide.shapes.add_shape(5, Inches(cx_r), Inches(body_top), Inches(cw), Inches(body_h))
+            card_r.fill.solid()
+            card_r.fill.fore_color.rgb = card_bg_rgb
+            card_r.line.color.rgb = accent_rgb
+
+            pill_r = slide.shapes.add_shape(5, Inches(cx_r + 0.2), Inches(body_top + 0.2), Inches(2.3), Inches(0.34))
+            pill_r.fill.solid()
+            pill_r.fill.fore_color.rgb = pill_bg_rgb
+            pill_r.line.color.rgb = accent_rgb
+            pp_r = pill_r.text_frame.paragraphs[0]
+            pp_r.text = "PROPOSED SOLUTION"
+            pp_r.font.size = Pt(10)
+            pp_r.font.bold = True
+            pp_r.font.color.rgb = accent_rgb
+
+            tb_r = slide.shapes.add_textbox(Inches(cx_r + 0.2), Inches(body_top + 0.64), Inches(cw - 0.4), Inches(body_h - 0.78))
+            _write_bullets_into_frame(tb_r.text_frame, bullets[mid:], font_pt=14, dark_text=use_dark_text)
+
         else:
-            # Dense 2-column card layout so non-image slides fill canvas symmetrically
+            # Archetype 6: Balanced Symmetrical Two-Column
+            col_w = (content_w - 0.32) / 2.0
             mid = max(1, (len(bullets) + 1) // 2)
             col_left = bullets[:mid]
             col_right = bullets[mid:] or bullets[:1]
-            col_w = (sw - 2 * margin_x - 0.32) / 2.0
 
             for col_i, col_items in enumerate((col_left, col_right)):
                 cx = margin_x + col_i * (col_w + 0.32)
                 card = slide.shapes.add_shape(5, Inches(cx), Inches(body_top), Inches(col_w), Inches(body_h))
                 card.fill.solid()
-                card.fill.fore_color.rgb = RGBColor(255, 255, 255) if use_dark_text else RGBColor(30, 41, 59)
-                card.line.color.rgb = RGBColor(203, 213, 225) if use_dark_text else RGBColor(51, 65, 85)
+                card.fill.fore_color.rgb = card_bg_rgb
+                card.line.color.rgb = card_border_rgb
 
                 tb = slide.shapes.add_textbox(Inches(cx + 0.22), Inches(body_top + 0.22), Inches(col_w - 0.44), Inches(body_h - 0.4))
-                _write_bullets_into_frame(tb.text_frame, col_items, font_pt=17, dark_text=use_dark_text)
+                _write_bullets_into_frame(tb.text_frame, col_items, font_pt=15, dark_text=use_dark_text)
 
+        # Full-Width Key Takeaway Banner
         if takeaway:
             ty = content_bottom_limit - takeaway_h
-            tbar = slide.shapes.add_shape(5, Inches(margin_x), Inches(ty), Inches(sw - 2 * margin_x), Inches(takeaway_h))
+            tbar = slide.shapes.add_shape(5, Inches(margin_x), Inches(ty), Inches(content_w), Inches(takeaway_h))
             tbar.fill.solid()
-            tbar.fill.fore_color.rgb = RGBColor(224, 242, 254) if use_dark_text else RGBColor(15, 23, 42)
-            tbar.line.color.rgb = RGBColor(6, 182, 212)
+            tbar.fill.fore_color.rgb = pill_bg_rgb
+            tbar.line.color.rgb = accent_rgb
             ttf = tbar.text_frame
             ttf.word_wrap = True
             tp = ttf.paragraphs[0]
-            tp.text = f"KEY TAKEAWAY:  {takeaway}"
-            tp.font.name = "Calibri"
-            tp.font.size = Pt(13)
-            tp.font.bold = True
-            tp.font.color.rgb = RGBColor(15, 23, 42) if use_dark_text else RGBColor(34, 211, 238)
+            r_tag = tp.add_run()
+            r_tag.text = "KEY TAKEAWAY  •  "
+            r_tag.font.name = "Calibri"
+            r_tag.font.size = Pt(11)
+            r_tag.font.bold = True
+            r_tag.font.color.rgb = accent_rgb
+            r_txt = tp.add_run()
+            r_txt.text = takeaway
+            r_txt.font.name = "Calibri"
+            r_txt.font.size = Pt(12)
+            r_txt.font.bold = False
+            r_txt.font.color.rgb = title_color
 
         note_text = sl.get("speaker_note") or ""
         if note_text:
