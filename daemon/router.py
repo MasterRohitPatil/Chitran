@@ -22,7 +22,8 @@ SYSTEM_PROMPT = (
 
 
 GROQ_MODELS = ("openai/gpt-oss-120b", "qwen/qwen3.8-27b")
-GEMINI_MODEL = "gemini-3.8-flash"
+GEMINI_MODELS = ("gemini-3.5-flash", "gemini-3.8-flash")
+GEMINI_MODEL = GEMINI_MODELS[0]
 
 
 async def query_groq(
@@ -85,7 +86,7 @@ async def query_gemini(
             "maxOutputTokens": max_tokens
         }
     }
-    async with httpx.AsyncClient(timeout=25.0) as client:
+    async with httpx.AsyncClient(timeout=12.0) as client:
         resp = await client.post(url, headers=headers, json=payload)
         resp.raise_for_status()
         data = resp.json()
@@ -166,39 +167,40 @@ async def query_mentor(
         else:
             blocked_reasons.append(f"Groq ({q_status['usage_pct']}% used)")
 
-    # 2. Try Gemini (gemini-3.8-flash)
+    # 2. Try Gemini (gemini-3.5-flash -> gemini-3.8-flash)
     if has_gemini:
         g_status = check_quota("gemini")
         if g_status["allowed"]:
-            try:
-                answer, tokens = await query_gemini(
-                    query_text,
-                    gemini_key,
-                    system_prompt=system_prompt,
-                    max_tokens=max_tokens,
-                    model_name=GEMINI_MODEL,
-                )
-                post_status = record_usage(
-                    "gemini",
-                    GEMINI_MODEL,
-                    prompt_tokens=tokens["prompt"],
-                    completion_tokens=tokens["completion"],
-                    total_tokens=tokens["total"] or None,
-                )
-                if post_status["warning"]:
-                    notify_windows(
-                        "Chitran — Quota Warning",
-                        f"Gemini free daily usage at {post_status['usage_pct']}%. Hard stop triggers at 95%."
+            for gem_model in GEMINI_MODELS:
+                try:
+                    answer, tokens = await query_gemini(
+                        query_text,
+                        gemini_key,
+                        system_prompt=system_prompt,
+                        max_tokens=max_tokens,
+                        model_name=gem_model,
                     )
-                    answer = f"[Quota Warning: Gemini daily free usage at {post_status['usage_pct']}%]\n\n{answer}"
-                return {
-                    "status": "success",
-                    "model": f"google/{GEMINI_MODEL}",
-                    "quota_pct": post_status["usage_pct"],
-                    "answer": answer,
-                }
-            except Exception as e:
-                print(f"[Router] Gemini {GEMINI_MODEL} failed: {e}")
+                    post_status = record_usage(
+                        "gemini",
+                        gem_model,
+                        prompt_tokens=tokens["prompt"],
+                        completion_tokens=tokens["completion"],
+                        total_tokens=tokens["total"] or None,
+                    )
+                    if post_status["warning"]:
+                        notify_windows(
+                            "Chitran — Quota Warning",
+                            f"Gemini free daily usage at {post_status['usage_pct']}%. Hard stop triggers at 95%."
+                        )
+                        answer = f"[Quota Warning: Gemini daily free usage at {post_status['usage_pct']}%]\n\n{answer}"
+                    return {
+                        "status": "success",
+                        "model": f"google/{gem_model}",
+                        "quota_pct": post_status["usage_pct"],
+                        "answer": answer,
+                    }
+                except Exception as e:
+                    print(f"[Router] Gemini {gem_model} failed: {e}")
         else:
             blocked_reasons.append(f"Gemini ({g_status['usage_pct']}% used)")
 

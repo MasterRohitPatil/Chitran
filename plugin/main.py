@@ -418,7 +418,7 @@ def handle_query(query_str: str) -> list:
         if arg:
             results.append({
                 "Title": f"Generate {ext_hint}: {arg}",
-                "SubTitle": "Stage 1: Research & open editable Outline Approval HUD -> ~/Documents/Sidekick_Outputs/",
+                "SubTitle": "Stage 1: Research & open editable Outline Approval HUD -> ~/Documents/Chitran_Outputs/",
                 "IcoPath": ICON_PATH,
                 "JsonRPCAction": {
                     "method": "dispatch_to_daemon",

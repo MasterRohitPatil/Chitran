@@ -13,7 +13,7 @@ Supports `sk doc`, `sk excel`, and `sk ppt` via an iterative 2-stage workflow:
            with local matplotlib flowchart fallback), search optimized 2-3 keyword
            visuals (Wikimedia API + Chrome CDP web image search), and compile
            dense, multi-layout `.docx`, `.xlsx`, or `.pptx` files into
-           `~/Documents/Sidekick_Outputs/`.
+           `~/Documents/Chitran_Outputs/`.
 """
 
 from __future__ import annotations
@@ -49,7 +49,8 @@ from researcher import discover_sources, scrape_all_sources, slugify_topic
 from router import query_mentor
 from win_ui import apply_win11_dwm_style, enable_high_dpi
 
-OUTPUT_DIR = Path.home() / "Documents" / "Sidekick_Outputs"
+OUTPUT_DIR = Path.home() / "Documents" / "Chitran_Outputs"
+LEGACY_OUTPUT_DIR = Path.home() / "Documents" / "Sidekick_Outputs"
 DRAFTS_DIR = PROJECT_ROOT / "data" / "office_drafts"
 ASSETS_DIR = PROJECT_ROOT / "data" / "office_assets"
 VENDOR_DIR = PROJECT_ROOT / "data" / "vendor"
@@ -1845,7 +1846,7 @@ async def compile_office_from_draft(
         "file": str(compiled),
         "visual_count": len(visuals),
         "template_used": resolved_template.name if (resolved_template and resolved_template.exists()) else "",
-        "message": f"Compiled {compiled.name} -> Sidekick_Outputs/",
+        "message": f"Compiled {compiled.name} -> Chitran_Outputs/",
     }
 
 
@@ -2165,7 +2166,7 @@ def show_office_review_hud(draft_path: Path) -> None:
             return
 
         file_path = Path(res["file"])
-        notify_windows("Chitran — Office File Ready", f"Saved {file_path.name} to Sidekick_Outputs/")
+        notify_windows("Chitran — Office File Ready", f"Saved {file_path.name} to Chitran_Outputs/")
         status_lbl.config(text=f"Ready ({res.get('visual_count', 0)} visuals): {file_path}", fg=ACCENT_EMERALD)
         build_btn.config(
             state="normal",

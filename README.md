@@ -58,7 +58,7 @@ flowchart LR
 | **`cn goal <task> @ <HH:MM>`** | Logs a daily goal + deadline in SQLite (or opens Deadline / Planner HUD). |
 | **`cn done <id or keyword>`** | Marks a pending goal completed. |
 | **`cn ask <question>`** | Queries Groq / Gemini mentor and opens a floating dark HUD. |
-| **`cn doc` / `excel` / `ppt <topic>`** | Stage 1 **Outline Approval HUD** (slide count, **Revise with AI**, `.pptx` template branding, local Mermaid PNGs, web image search) → compiles to `~/Documents/Sidekick_Outputs/`. |
+| **`cn doc` / `excel` / `ppt <topic>`** | Stage 1 **Outline Approval HUD** (slide count, **Revise with AI**, `.pptx` template branding, local Mermaid PNGs, web image search) → compiles to `~/Documents/Chitran_Outputs/`. |
 | **`cn research <topic>`** | Parallel technical web search → Markdown Context Pack + 1-click Copy Prompt HUD. |
 | **`cn fill [role]`** | Auto-fills active Chrome form fields from local vault via CDP (never clicks Submit). |
 | **`cn mail`** | Summarizes today's Gmail via silent Chrome CDP into a dark HUD + voice briefing. |
